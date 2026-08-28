@@ -1,0 +1,67 @@
+{
+  "name": "school-controller",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Monorepo base for the School Controller academic management system.",
+  "packageManager": "npm@12.0.2",
+  "engines": {
+    "node": ">=20.19",
+    "npm": ">=10"
+  },
+  "scripts": {
+    "dev": "turbo dev",
+    "dev:app": "npm run dev -w @school-controller/app",
+    "dev:api": "npm run dev -w @school-controller/api",
+    "web": "npm run web -w @school-controller/app",
+    "android": "npm run android -w @school-controller/app",
+    "ios": "npm run ios -w @school-controller/app",
+    "build": "turbo build",
+    "lint": "turbo lint",
+    "typecheck": "turbo typecheck",
+    "format": "prettier . --write",
+    "format:check": "prettier . --check",
+    "db:up": "docker compose up -d",
+    "db:down": "docker compose down",
+    "prepare": "husky"
+  },
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "overrides": {
+    "react": "19.2.3",
+    "react-dom": "19.2.3",
+    "@react-native/metro-config": "0.86.3",
+    "react-native": "0.86.3",
+    "react-native-reanimated": "4.5.5",
+    "react-native-safe-area-context": "5.7.0",
+    "react-native-worklets": "0.10.4"
+  },
+  "lint-staged": {
+    "*.{js,jsx,ts,tsx}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "*.{json,md,yml,yaml,css}": [
+      "prettier --write"
+    ]
+  },
+  "devDependencies": {
+    "@eslint/js": "10.0.1",
+    "eslint": "10.9.1",
+    "globals": "16.5.0",
+    "husky": "9.1.7",
+    "lint-staged": "17.4.1",
+    "prettier": "3.9.6",
+    "turbo": "2.10.12",
+    "typescript": "5.9.3",
+    "typescript-eslint": "8.68.0"
+  },
+  "allowScripts": {
+    "esbuild@0.28.2": true,
+    "prisma@7.10.0": true,
+    "@prisma/engines@7.10.0": true,
+    "fsevents": false
+  }
+}
