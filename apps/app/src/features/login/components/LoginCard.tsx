@@ -44,7 +44,7 @@ export function LoginCard({ feedbackText, handlers, state }: LoginCardProps) {
             />
             <Text style={styles.rememberText}>{loginCopy.form.rememberSession}</Text>
           </View>
-          <Pressable accessibilityRole="link" focusable>
+          <Pressable accessibilityRole="link" focusable style={styles.forgotLink}>
             <Text style={styles.linkText}>{loginCopy.form.forgotPassword}</Text>
           </Pressable>
         </View>
@@ -77,9 +77,12 @@ export function LoginCard({ feedbackText, handlers, state }: LoginCardProps) {
 const styles = StyleSheet.create({
   actions: {
     alignItems: 'center',
+    columnGap: 16,
+    flexWrap: 'wrap',
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginTop: 26
+    marginTop: 26,
+    rowGap: 12
   },
   card: {
     backgroundColor: loginColors.surfaceCard,
@@ -106,11 +109,18 @@ const styles = StyleSheet.create({
     letterSpacing: 0,
     marginTop: 34
   },
+  forgotLink: {
+    alignItems: 'flex-end',
+    flexGrow: 1,
+    flexShrink: 0,
+    minWidth: 190
+  },
   linkText: {
     color: loginColors.primary,
     fontSize: 16,
     fontWeight: '600',
-    letterSpacing: 0
+    letterSpacing: 0,
+    textAlign: 'right'
   },
   primaryButton: {
     alignItems: 'center',
@@ -129,6 +139,7 @@ const styles = StyleSheet.create({
   rememberRow: {
     alignItems: 'center',
     flexDirection: 'row',
+    flexShrink: 0,
     gap: 8
   },
   rememberText: {

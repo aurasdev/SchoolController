@@ -27,16 +27,22 @@ export function LoginScreen({ onAuthenticated }: LoginScreenProps) {
   if (isDesktop) {
     return (
       <SafeAreaView style={styles.screen}>
-        <View style={styles.desktopShell}>
-          <BrandPanel />
-          <View style={styles.desktopFormSide}>
-            <LoginCard
-              feedbackText={loginForm.feedbackText}
-              handlers={loginForm.handlers}
-              state={loginForm.state}
-            />
+        <ScrollView
+          contentContainerStyle={styles.desktopContent}
+          keyboardShouldPersistTaps="handled"
+          style={styles.desktopScroller}
+        >
+          <View style={styles.desktopShell}>
+            <BrandPanel />
+            <View style={styles.desktopFormSide}>
+              <LoginCard
+                feedbackText={loginForm.feedbackText}
+                handlers={loginForm.handlers}
+                state={loginForm.state}
+              />
+            </View>
           </View>
-        </View>
+        </ScrollView>
       </SafeAreaView>
     );
   }
@@ -50,7 +56,6 @@ export function LoginScreen({ onAuthenticated }: LoginScreenProps) {
         <ScrollView
           contentContainerStyle={styles.mobileContent}
           keyboardShouldPersistTaps="handled"
-          showsVerticalScrollIndicator={false}
         >
           <MobileLoginForm
             feedbackText={loginForm.feedbackText}
@@ -64,16 +69,23 @@ export function LoginScreen({ onAuthenticated }: LoginScreenProps) {
 }
 
 const styles = StyleSheet.create({
+  desktopContent: {
+    flexGrow: 1
+  },
   desktopFormSide: {
     alignItems: 'center',
     flex: 0.92,
     justifyContent: 'center',
     padding: 48
   },
+  desktopScroller: {
+    flex: 1
+  },
   desktopShell: {
     flex: 1,
     flexDirection: 'row',
-    minHeight: 720
+    minHeight: 720,
+    width: '100%'
   },
   mobileContent: {
     flexGrow: 1,
