@@ -6,15 +6,7 @@ export default function RootLayout() {
     <>
       <Stack
         screenOptions={{
-          headerTitle: 'School Controller',
-          headerStyle: {
-            backgroundColor: '#f8fafc'
-          },
-          headerShadowVisible: false,
-          headerTitleStyle: {
-            color: '#0f172a',
-            fontWeight: '700'
-          }
+          headerShown: false
         }}
       />
       <StatusBar style="dark" />
