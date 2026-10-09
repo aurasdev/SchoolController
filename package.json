@@ -23,6 +23,9 @@
     "format:check": "prettier . --check",
     "db:up": "docker compose up -d",
     "db:down": "docker compose down",
+    "db:generate": "npm run prisma:generate -w @school-controller/api",
+    "db:validate": "npm run prisma:validate -w @school-controller/api",
+    "db:migrate": "npm run prisma:migrate -w @school-controller/api",
     "prepare": "husky"
   },
   "workspaces": [

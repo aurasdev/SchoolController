@@ -4,8 +4,9 @@ School Controller is a multiplatform academic management system for educational 
 This repository currently contains the technical base for the project: a shared Expo client,
 a Node.js API, a shared TypeScript package, local PostgreSQL configuration, and monorepo tooling.
 
-Business features such as authentication, academic CRUDs, scheduling, conflict detection, and the
-full database model are intentionally out of scope for this base ticket.
+The initial academic database model covers users, roles, students, teachers, subjects, groups,
+classrooms, periods, schedules, and schedule assignments. See
+[`docs/database-model.md`](docs/database-model.md) for its ER diagram and relationship rules.
 
 ## Tech Stack
 
@@ -71,6 +72,13 @@ npm run db:down
 ```
 
 The Docker service creates a local `school_controller` database with a persistent volume.
+
+Apply the pending Prisma migrations and generate the client:
+
+```bash
+npm run db:migrate
+npm run db:generate
+```
 
 ## Development
 

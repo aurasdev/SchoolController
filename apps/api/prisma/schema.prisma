@@ -5,3 +5,168 @@ generator client {
 datasource db {
   provider = "postgresql"
 }
+
+enum DayOfWeek {
+  MONDAY
+  TUESDAY
+  WEDNESDAY
+  THURSDAY
+  FRIDAY
+  SATURDAY
+  SUNDAY
+}
+
+model Role {
+  id          String   @id @default(uuid()) @db.Uuid
+  name        String   @unique @db.VarChar(50)
+  description String?  @db.VarChar(255)
+  users       User[]
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@map("roles")
+}
+
+model User {
+  id           String   @id @default(uuid()) @db.Uuid
+  roleId       String   @map("role_id") @db.Uuid
+  email        String   @unique @db.VarChar(255)
+  passwordHash String   @map("password_hash") @db.VarChar(255)
+  firstName    String   @map("first_name") @db.VarChar(100)
+  lastName     String   @map("last_name") @db.VarChar(100)
+  isActive     Boolean  @default(true) @map("is_active")
+  role         Role     @relation(fields: [roleId], references: [id], onDelete: Restrict)
+  student      Student?
+  teacher      Teacher?
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  @@index([roleId])
+  @@map("users")
+}
+
+model Student {
+  id               String   @id @default(uuid()) @db.Uuid
+  userId           String   @unique @map("user_id") @db.Uuid
+  groupId          String?  @map("group_id") @db.Uuid
+  enrollmentNumber String   @unique @map("enrollment_number") @db.VarChar(50)
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  group            Group?   @relation(fields: [groupId], references: [id], onDelete: SetNull)
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
+  @@index([groupId])
+  @@map("students")
+}
+
+model Teacher {
+  id             String               @id @default(uuid()) @db.Uuid
+  userId         String               @unique @map("user_id") @db.Uuid
+  employeeNumber String               @unique @map("employee_number") @db.VarChar(50)
+  user           User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  assignments    ScheduleAssignment[]
+  createdAt      DateTime             @default(now()) @map("created_at")
+  updatedAt      DateTime             @updatedAt @map("updated_at")
+
+  @@map("teachers")
+}
+
+model Subject {
+  id          String               @id @default(uuid()) @db.Uuid
+  code        String               @unique @db.VarChar(30)
+  name        String               @db.VarChar(150)
+  description String?              @db.Text
+  assignments ScheduleAssignment[]
+  createdAt   DateTime             @default(now()) @map("created_at")
+  updatedAt   DateTime             @updatedAt @map("updated_at")
+
+  @@map("subjects")
+}
+
+model Group {
+  id               String               @id @default(uuid()) @db.Uuid
+  academicPeriodId String               @map("academic_period_id") @db.Uuid
+  code             String               @db.VarChar(30)
+  name             String               @db.VarChar(100)
+  academicPeriod   AcademicPeriod       @relation(fields: [academicPeriodId], references: [id], onDelete: Restrict)
+  students         Student[]
+  assignments      ScheduleAssignment[]
+  createdAt        DateTime             @default(now()) @map("created_at")
+  updatedAt        DateTime             @updatedAt @map("updated_at")
+
+  @@unique([id, academicPeriodId])
+  @@unique([code, academicPeriodId])
+  @@index([academicPeriodId])
+  @@map("academic_groups")
+}
+
+model Classroom {
+  id          String               @id @default(uuid()) @db.Uuid
+  code        String               @unique @db.VarChar(30)
+  name        String               @db.VarChar(100)
+  capacity    Int?
+  location    String?              @db.VarChar(150)
+  assignments ScheduleAssignment[]
+  createdAt   DateTime             @default(now()) @map("created_at")
+  updatedAt   DateTime             @updatedAt @map("updated_at")
+
+  @@map("classrooms")
+}
+
+model AcademicPeriod {
+  id          String               @id @default(uuid()) @db.Uuid
+  name        String               @unique @db.VarChar(100)
+  startsOn    DateTime             @map("starts_on") @db.Date
+  endsOn      DateTime             @map("ends_on") @db.Date
+  isActive    Boolean              @default(false) @map("is_active")
+  groups      Group[]
+  schedules   Schedule[]
+  assignments ScheduleAssignment[]
+  createdAt   DateTime             @default(now()) @map("created_at")
+  updatedAt   DateTime             @updatedAt @map("updated_at")
+
+  @@map("academic_periods")
+}
+
+model Schedule {
+  id               String               @id @default(uuid()) @db.Uuid
+  academicPeriodId String               @map("academic_period_id") @db.Uuid
+  name             String               @db.VarChar(100)
+  academicPeriod   AcademicPeriod       @relation(fields: [academicPeriodId], references: [id], onDelete: Restrict)
+  assignments      ScheduleAssignment[]
+  createdAt        DateTime             @default(now()) @map("created_at")
+  updatedAt        DateTime             @updatedAt @map("updated_at")
+
+  @@unique([id, academicPeriodId])
+  @@unique([name, academicPeriodId])
+  @@index([academicPeriodId])
+  @@map("schedules")
+}
+
+model ScheduleAssignment {
+  id               String         @id @default(uuid()) @db.Uuid
+  scheduleId       String         @map("schedule_id") @db.Uuid
+  academicPeriodId String         @map("academic_period_id") @db.Uuid
+  subjectId        String         @map("subject_id") @db.Uuid
+  teacherId        String         @map("teacher_id") @db.Uuid
+  groupId          String         @map("group_id") @db.Uuid
+  classroomId      String         @map("classroom_id") @db.Uuid
+  dayOfWeek        DayOfWeek      @map("day_of_week")
+  startTime        DateTime       @map("start_time") @db.Time(0)
+  endTime          DateTime       @map("end_time") @db.Time(0)
+  schedule         Schedule       @relation(fields: [scheduleId, academicPeriodId], references: [id, academicPeriodId], onDelete: Cascade)
+  academicPeriod   AcademicPeriod @relation(fields: [academicPeriodId], references: [id], onDelete: Restrict)
+  subject          Subject        @relation(fields: [subjectId], references: [id], onDelete: Restrict)
+  teacher          Teacher        @relation(fields: [teacherId], references: [id], onDelete: Restrict)
+  group            Group          @relation(fields: [groupId, academicPeriodId], references: [id, academicPeriodId], onDelete: Restrict)
+  classroom        Classroom      @relation(fields: [classroomId], references: [id], onDelete: Restrict)
+  createdAt        DateTime       @default(now()) @map("created_at")
+  updatedAt        DateTime       @updatedAt @map("updated_at")
+
+  @@index([scheduleId, academicPeriodId])
+  @@index([subjectId])
+  @@index([teacherId, academicPeriodId, dayOfWeek])
+  @@index([groupId, academicPeriodId, dayOfWeek])
+  @@index([classroomId, academicPeriodId, dayOfWeek])
+  @@map("schedule_assignments")
+}
