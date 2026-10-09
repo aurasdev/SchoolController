@@ -40,9 +40,9 @@ const styles = StyleSheet.create({
   activityDot: {
     backgroundColor: dashboardColors.primary,
     borderRadius: 4,
-    height: 8,
-    marginTop: 6,
-    width: 8
+    height: 6,
+    marginTop: 7,
+    width: 6
   },
   activityRow: {
     flexDirection: 'row',
@@ -50,15 +50,15 @@ const styles = StyleSheet.create({
   },
   activityTime: {
     color: dashboardColors.textMuted,
-    fontSize: 13,
-    fontWeight: '600',
+    fontSize: 12,
+    fontWeight: '400',
     letterSpacing: 0,
-    marginTop: 2
+    lineHeight: 16
   },
   activityTitle: {
     color: dashboardColors.textPrimary,
-    fontSize: 15,
-    fontWeight: '800',
+    fontSize: 14,
+    fontWeight: '500',
     letterSpacing: 0,
     lineHeight: 20
   },
@@ -75,13 +75,14 @@ const styles = StyleSheet.create({
     shadowRadius: 8
   },
   list: {
-    gap: 14,
-    marginTop: 34
+    gap: 8,
+    marginTop: 24
   },
   title: {
     color: dashboardColors.textPrimary,
-    fontSize: 23,
-    fontWeight: '900',
-    letterSpacing: 0
+    fontSize: 20,
+    fontWeight: '700',
+    letterSpacing: 0,
+    lineHeight: 28
   }
 });

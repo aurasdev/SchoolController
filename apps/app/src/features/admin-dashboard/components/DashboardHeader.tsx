@@ -64,9 +64,10 @@ const styles = StyleSheet.create({
   },
   brandTitle: {
     color: dashboardColors.textPrimary,
-    fontSize: 20,
-    fontWeight: '900',
-    letterSpacing: 0
+    fontSize: 16,
+    fontWeight: '700',
+    letterSpacing: 0,
+    lineHeight: 20
   },
   header: {
     alignItems: 'center',
@@ -75,7 +76,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     flexDirection: 'row',
     justifyContent: 'space-between',
-    minHeight: 58,
+    minHeight: 44,
     paddingHorizontal: 24
   },
   schoolBadge: {

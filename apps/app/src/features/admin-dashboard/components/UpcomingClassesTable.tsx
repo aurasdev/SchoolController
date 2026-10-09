@@ -60,16 +60,18 @@ const styles = StyleSheet.create({
   cell: {
     color: dashboardColors.textPrimary,
     flex: 1,
-    fontSize: 15,
-    fontWeight: '600',
-    letterSpacing: 0
+    fontSize: 14,
+    fontWeight: '400',
+    letterSpacing: 0,
+    lineHeight: 20
   },
   headerCell: {
     color: dashboardColors.textMuted,
     flex: 1,
-    fontSize: 13,
-    fontWeight: '900',
-    letterSpacing: 0
+    fontSize: 12,
+    fontWeight: '600',
+    letterSpacing: 0,
+    lineHeight: 16
   },
   headerRow: {
     backgroundColor: dashboardColors.card,
@@ -87,7 +89,7 @@ const styles = StyleSheet.create({
     borderBottomColor: dashboardColors.border,
     borderBottomWidth: 1,
     flexDirection: 'row',
-    minHeight: 46,
+    minHeight: 40,
     paddingHorizontal: 16
   },
   statusBadge: {
@@ -99,21 +101,23 @@ const styles = StyleSheet.create({
   },
   statusText: {
     color: dashboardColors.primary,
-    fontSize: 12,
-    fontWeight: '800',
-    letterSpacing: 0
+    fontSize: 11,
+    fontWeight: '500',
+    letterSpacing: 0,
+    lineHeight: 14
   },
   table: {
     borderColor: dashboardColors.border,
     borderRadius: 8,
     borderWidth: 1,
-    marginTop: 34,
+    marginTop: 24,
     overflow: 'hidden'
   },
   title: {
     color: dashboardColors.textPrimary,
-    fontSize: 23,
-    fontWeight: '900',
-    letterSpacing: 0
+    fontSize: 20,
+    fontWeight: '700',
+    letterSpacing: 0,
+    lineHeight: 28
   }
 });

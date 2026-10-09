@@ -49,7 +49,7 @@ const styles = StyleSheet.create({
   },
   list: {
     gap: 10,
-    marginTop: 34
+    marginTop: 24
   },
   scheduleAccent: {
     alignSelf: 'stretch',
@@ -58,10 +58,11 @@ const styles = StyleSheet.create({
     width: 4
   },
   scheduleRoom: {
-    fontSize: 13,
-    fontWeight: '600',
+    fontSize: 12,
+    fontWeight: '400',
     letterSpacing: 0,
-    marginTop: 7,
+    lineHeight: 16,
+    marginTop: 2,
     opacity: 0.7
   },
   scheduleRow: {
@@ -73,21 +74,24 @@ const styles = StyleSheet.create({
     paddingVertical: 12
   },
   scheduleSubject: {
-    fontSize: 15,
-    fontWeight: '900',
-    letterSpacing: 0
-  },
-  scheduleTime: {
-    fontSize: 13,
+    fontSize: 14,
     fontWeight: '600',
     letterSpacing: 0,
-    marginTop: 7,
+    lineHeight: 20
+  },
+  scheduleTime: {
+    fontSize: 12,
+    fontWeight: '400',
+    letterSpacing: 0,
+    lineHeight: 16,
+    marginTop: 2,
     opacity: 0.72
   },
   title: {
     color: dashboardColors.textPrimary,
-    fontSize: 23,
-    fontWeight: '900',
-    letterSpacing: 0
+    fontSize: 20,
+    fontWeight: '700',
+    letterSpacing: 0,
+    lineHeight: 28
   }
 });

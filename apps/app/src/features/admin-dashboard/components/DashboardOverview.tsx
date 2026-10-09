@@ -51,13 +51,14 @@ const styles = StyleSheet.create({
   actions: {
     alignItems: 'center',
     flexDirection: 'row',
-    gap: 10
+    gap: 8
   },
   compactHeadingRow: {
     alignItems: 'flex-start',
     flexDirection: 'column'
   },
   compactPanelsRow: {
+    alignItems: 'stretch',
     flexDirection: 'column'
   },
   headingCopy: {
@@ -70,48 +71,56 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between'
   },
   panelsRow: {
+    alignItems: 'flex-start',
     flexDirection: 'row',
     gap: 16,
     marginTop: 24
   },
   primaryButton: {
+    alignItems: 'center',
     backgroundColor: dashboardColors.primary,
-    borderRadius: 8,
-    paddingHorizontal: 14,
-    paddingVertical: 8
+    borderRadius: 10,
+    height: 24,
+    justifyContent: 'center',
+    paddingHorizontal: 8
   },
   primaryButtonText: {
     color: dashboardColors.card,
     fontSize: 14,
-    fontWeight: '900',
-    letterSpacing: 0
+    fontWeight: '700',
+    letterSpacing: 0,
+    lineHeight: 16
   },
   secondaryButton: {
+    alignItems: 'center',
     backgroundColor: dashboardColors.card,
     borderColor: dashboardColors.border,
-    borderRadius: 8,
+    borderRadius: 10,
     borderWidth: 1,
-    paddingHorizontal: 14,
-    paddingVertical: 8
+    height: 24,
+    justifyContent: 'center',
+    paddingHorizontal: 8
   },
   secondaryButtonText: {
     color: dashboardColors.textPrimary,
     fontSize: 14,
-    fontWeight: '800',
-    letterSpacing: 0
+    fontWeight: '600',
+    letterSpacing: 0,
+    lineHeight: 16
   },
   subtitle: {
     color: dashboardColors.textMuted,
-    fontSize: 15,
-    fontWeight: '600',
+    fontSize: 14,
+    fontWeight: '400',
     letterSpacing: 0,
-    lineHeight: 21,
-    marginTop: 6
+    lineHeight: 20,
+    marginTop: 4
   },
   title: {
     color: dashboardColors.textPrimary,
-    fontSize: 27,
-    fontWeight: '900',
-    letterSpacing: 0
+    fontSize: 24,
+    fontWeight: '700',
+    letterSpacing: 0,
+    lineHeight: 32
   }
 });

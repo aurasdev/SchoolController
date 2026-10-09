@@ -45,10 +45,8 @@ export function DashboardSidebar({
             />
           ))}
         </View>
-      </View>
 
-      {isLight ? null : (
-        <View>
+        {isLight ? null : (
           <View style={styles.portalCard}>
             <Text style={styles.portalTitle}>{dashboardCopy.portalTitle}</Text>
             <Text style={styles.portalDescription}>{dashboardCopy.portalDescription}</Text>
@@ -56,16 +54,18 @@ export function DashboardSidebar({
               <Text style={styles.portalBadgeText}>{dashboardCopy.portalBadge}</Text>
             </View>
           </View>
+        )}
+      </View>
 
-          <Pressable
-            accessibilityRole="button"
-            focusable
-            onPress={onSignOut}
-            style={styles.signOutButton}
-          >
-            <Text style={styles.signOutText}>Cerrar sesión</Text>
-          </Pressable>
-        </View>
+      {isLight ? null : (
+        <Pressable
+          accessibilityRole="button"
+          focusable
+          onPress={onSignOut}
+          style={styles.signOutButton}
+        >
+          <Text style={styles.signOutText}>Cerrar sesión</Text>
+        </Pressable>
       )}
     </View>
   );
@@ -75,20 +75,22 @@ const styles = StyleSheet.create({
   brandRow: {
     alignItems: 'center',
     flexDirection: 'row',
-    gap: 10,
+    gap: 8,
     marginBottom: 34
   },
   brandSubtitle: {
-    color: '#b8b5dc',
+    color: '#a5b4fc',
     fontSize: 10,
-    fontWeight: '800',
-    letterSpacing: 0
+    fontWeight: '500',
+    letterSpacing: 0.5,
+    lineHeight: 12
   },
   brandTitle: {
     color: dashboardColors.card,
-    fontSize: 17,
-    fontWeight: '900',
-    letterSpacing: 0
+    fontSize: 16,
+    fontWeight: '700',
+    letterSpacing: 0,
+    lineHeight: 20
   },
   lightBrandTitle: {
     color: dashboardColors.textPrimary
@@ -103,56 +105,59 @@ const styles = StyleSheet.create({
   },
   portalBadge: {
     alignSelf: 'flex-start',
-    backgroundColor: '#5b4de3',
-    borderRadius: 5,
+    backgroundColor: '#4338ca',
+    borderRadius: 6,
     marginTop: 12,
-    paddingHorizontal: 10,
-    paddingVertical: 5
+    paddingHorizontal: 8,
+    paddingVertical: 4
   },
   portalBadgeText: {
     color: dashboardColors.card,
     fontSize: 12,
-    fontWeight: '800',
-    letterSpacing: 0
+    fontWeight: '500',
+    letterSpacing: 0,
+    lineHeight: 13
   },
   portalCard: {
     backgroundColor: dashboardColors.mutedPanel,
     borderRadius: 8,
+    marginTop: 32,
     padding: 16
   },
   portalDescription: {
-    color: '#c9c6ec',
-    fontSize: 12,
-    fontWeight: '600',
+    color: '#c7d2fe',
+    fontSize: 11,
+    fontWeight: '400',
     letterSpacing: 0,
-    lineHeight: 17,
-    marginTop: 14
+    lineHeight: 16,
+    marginTop: 12
   },
   portalTitle: {
     color: dashboardColors.card,
-    fontSize: 15,
-    fontWeight: '900',
-    letterSpacing: 0
+    fontSize: 13,
+    fontWeight: '600',
+    letterSpacing: 0,
+    lineHeight: 16
   },
   sidebar: {
     backgroundColor: dashboardColors.darkPanel,
     justifyContent: 'space-between',
-    paddingHorizontal: 22,
-    paddingVertical: 26,
+    paddingHorizontal: 16,
+    paddingVertical: 24,
     width: 260
   },
   signOutButton: {
     borderColor: 'rgba(255, 255, 255, 0.18)',
     borderRadius: 6,
     borderWidth: 1,
-    marginTop: 16,
     paddingVertical: 10
   },
   signOutText: {
     color: dashboardColors.card,
-    fontSize: 13,
-    fontWeight: '800',
+    fontSize: 14,
+    fontWeight: '500',
     letterSpacing: 0,
+    lineHeight: 20,
     textAlign: 'center'
   }
 });

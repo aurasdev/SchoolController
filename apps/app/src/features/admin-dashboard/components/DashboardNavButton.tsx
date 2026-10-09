@@ -64,7 +64,7 @@ const styles = StyleSheet.create({
   },
   activeNavLabel: {
     color: dashboardColors.card,
-    fontWeight: '800'
+    fontWeight: '500'
   },
   lightActiveNavIcon: {
     backgroundColor: dashboardColors.primary
@@ -74,7 +74,7 @@ const styles = StyleSheet.create({
   },
   lightActiveNavLabel: {
     color: dashboardColors.primary,
-    fontWeight: '900'
+    fontWeight: '600'
   },
   lightNavIcon: {
     backgroundColor: '#d3d4d9'
@@ -98,8 +98,9 @@ const styles = StyleSheet.create({
   },
   navLabel: {
     color: '#d4d1ee',
-    fontSize: 15,
-    fontWeight: '700',
-    letterSpacing: 0
+    fontSize: 14,
+    fontWeight: '500',
+    letterSpacing: 0,
+    lineHeight: 20
   }
 });

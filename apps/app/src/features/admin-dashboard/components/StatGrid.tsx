@@ -43,7 +43,7 @@ const styles = StyleSheet.create({
     borderColor: dashboardColors.border,
     borderRadius: 8,
     borderWidth: 1,
-    minHeight: 150,
+    minHeight: 176,
     padding: 20,
     shadowColor: '#12131a',
     shadowOffset: { height: 2, width: 0 },
@@ -66,34 +66,36 @@ const styles = StyleSheet.create({
   },
   label: {
     color: dashboardColors.textPrimary,
-    fontSize: 22,
-    fontWeight: '900',
-    letterSpacing: 0
+    fontSize: 16,
+    fontWeight: '700',
+    letterSpacing: 0,
+    lineHeight: 20
   },
   trendDot: {
     backgroundColor: dashboardColors.primary,
     borderRadius: 4,
-    height: 8,
-    width: 8
+    height: 6,
+    width: 6
   },
   trendRow: {
     alignItems: 'center',
     flexDirection: 'row',
     gap: 6,
-    marginTop: 8
+    marginTop: 4
   },
   trendText: {
     color: dashboardColors.textSecondary,
-    fontSize: 15,
-    fontWeight: '700',
-    letterSpacing: 0
+    fontSize: 14,
+    fontWeight: '400',
+    letterSpacing: 0,
+    lineHeight: 20
   },
   value: {
     color: dashboardColors.textPrimary,
-    fontSize: 52,
-    fontWeight: '900',
+    fontSize: 48,
+    fontWeight: '700',
     letterSpacing: 0,
-    lineHeight: 62,
-    marginTop: 30
+    lineHeight: 56,
+    marginTop: 8
   }
 });
