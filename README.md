@@ -55,7 +55,10 @@ The example file contains local development values only:
 - `POSTGRES_PORT`: host port exposed by the PostgreSQL container. It defaults to `5433` to avoid
   conflicts with locally installed PostgreSQL instances.
 - `PORT`: API port. The default development value is `4000`.
+- `CORS_ORIGINS`: comma-separated web origins allowed to send authenticated requests.
 - `EXPO_PUBLIC_API_URL`: public Expo variable used by the client.
+- `SEED_ADMIN_EMAIL` and `SEED_ADMIN_PASSWORD`: local administrator credentials created by the
+  database seed.
 
 Do not commit `.env` files.
 
@@ -83,6 +86,15 @@ Apply the pending Prisma migrations and generate the client:
 npm run db:migrate
 npm run db:generate
 ```
+
+Seed the four application roles and a local administrator account:
+
+```bash
+npm run db:seed
+```
+
+The default local credentials from `.env.example` are `admin@school.edu` / `Admin123`. Change
+them in `.env` when needed; production seeds require an explicitly configured password.
 
 ## API foundation
 
@@ -129,6 +141,21 @@ Run the backend test suite with:
 ```bash
 npm run test -w @school-controller/api
 ```
+
+## Authentication
+
+The login flow authenticates active users against PostgreSQL and derives authorization exclusively
+from the role stored in the database. Passwords are hashed with Argon2id. Session tokens expire,
+are stored as SHA-256 hashes in PostgreSQL, and can be revoked during logout.
+
+- `POST /auth/login`: validates email and password, then creates a session.
+- `GET /auth/me`: restores the user associated with an active session.
+- `POST /auth/logout`: revokes the active session.
+
+On web, the session is sent in an `HttpOnly`, `SameSite=Lax` cookie. Native clients keep a
+non-remembered token in memory and use Expo SecureStore only when the user enables the remember
+session option. Protected API routes can compose `requireAuthentication` with `requireRoles` for
+role-based access control.
 
 ## Development
 
