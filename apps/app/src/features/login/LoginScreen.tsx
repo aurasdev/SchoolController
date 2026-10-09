@@ -27,22 +27,16 @@ export function LoginScreen({ onAuthenticated }: LoginScreenProps) {
   if (isDesktop) {
     return (
       <SafeAreaView style={styles.screen}>
-        <ScrollView
-          contentContainerStyle={styles.desktopContent}
-          keyboardShouldPersistTaps="handled"
-          style={styles.desktopScroller}
-        >
-          <View style={styles.desktopShell}>
-            <BrandPanel />
-            <View style={styles.desktopFormSide}>
-              <LoginCard
-                feedbackText={loginForm.feedbackText}
-                handlers={loginForm.handlers}
-                state={loginForm.state}
-              />
-            </View>
+        <View style={styles.desktopShell}>
+          <BrandPanel />
+          <View style={styles.desktopFormSide}>
+            <LoginCard
+              feedbackText={loginForm.feedbackText}
+              handlers={loginForm.handlers}
+              state={loginForm.state}
+            />
           </View>
-        </ScrollView>
+        </View>
       </SafeAreaView>
     );
   }
@@ -69,22 +63,15 @@ export function LoginScreen({ onAuthenticated }: LoginScreenProps) {
 }
 
 const styles = StyleSheet.create({
-  desktopContent: {
-    flexGrow: 1
-  },
   desktopFormSide: {
     alignItems: 'center',
     flex: 0.92,
     justifyContent: 'center',
-    padding: 48
-  },
-  desktopScroller: {
-    flex: 1
+    padding: 40
   },
   desktopShell: {
     flex: 1,
     flexDirection: 'row',
-    minHeight: 720,
     width: '100%'
   },
   mobileContent: {
@@ -99,6 +86,12 @@ const styles = StyleSheet.create({
   },
   screen: {
     backgroundColor: loginColors.surfaceBg,
-    flex: 1
+    flex: 1,
+    ...(Platform.OS === 'web'
+      ? ({
+          height: '100vh',
+          overflow: 'hidden'
+        } as Record<string, unknown>)
+      : {})
   }
 });

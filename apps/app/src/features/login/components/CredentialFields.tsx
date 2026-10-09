@@ -79,11 +79,11 @@ export function CredentialFields({
 
 const styles = StyleSheet.create({
   desktopContainer: {
-    marginTop: 24
+    marginTop: 18
   },
   desktopFeedback: {
     color: loginColors.textSecondary,
-    fontSize: 14,
+    fontSize: 11,
     fontWeight: '600',
     letterSpacing: 0,
     marginTop: 8
@@ -93,20 +93,20 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     borderWidth: 1,
     color: loginColors.textPrimary,
-    fontSize: 17,
-    height: 52,
+    fontSize: 14,
+    height: 44,
     letterSpacing: 0,
     paddingHorizontal: 14
   },
   desktopLabel: {
     color: loginColors.textPrimary,
-    fontSize: 15,
+    fontSize: 12,
     fontWeight: '700',
     letterSpacing: 0,
     marginBottom: 8
   },
   desktopPasswordLabel: {
-    marginTop: 16
+    marginTop: 12
   },
   errorText: {
     color: loginColors.danger

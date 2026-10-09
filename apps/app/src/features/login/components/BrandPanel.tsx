@@ -1,4 +1,4 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { Platform, StyleSheet, Text, View } from 'react-native';
 
 import { loginCopy } from '@/features/login/content';
 import { loginColors } from '@/features/login/tokens';
@@ -29,15 +29,16 @@ export function BrandPanel() {
 
 const styles = StyleSheet.create({
   copy: {
-    maxWidth: 760
+    marginTop: 94,
+    maxWidth: 620
   },
   description: {
     color: '#d7e3ff',
-    fontSize: 21,
+    fontSize: 14,
     fontWeight: '500',
     letterSpacing: 0,
-    lineHeight: 30,
-    maxWidth: 800
+    lineHeight: 20,
+    maxWidth: 610
   },
   footer: {
     alignItems: 'center',
@@ -45,6 +46,7 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     flexDirection: 'row',
     justifyContent: 'space-between',
+    marginTop: 'auto',
     paddingTop: 28
   },
   footerText: {
@@ -56,35 +58,39 @@ const styles = StyleSheet.create({
   header: {
     alignItems: 'center',
     flexDirection: 'row',
-    gap: 16
+    gap: 12
   },
   institution: {
     color: loginColors.surfaceCard,
-    fontSize: 24,
+    fontSize: 15,
     fontWeight: '800',
     letterSpacing: 0
   },
   panel: {
     backgroundColor: loginColors.primary,
     flex: 1.12,
-    justifyContent: 'space-between',
     paddingBottom: 74,
-    paddingHorizontal: 84,
-    paddingTop: 96
+    paddingHorizontal: 64,
+    paddingTop: 80,
+    ...(Platform.OS === 'web'
+      ? ({
+          backgroundImage: 'linear-gradient(135deg, #1E3A8A 41%, #131E38 100%)'
+        } as Record<string, unknown>)
+      : {})
   },
   subtitle: {
     color: '#bdd2ff',
-    fontSize: 28,
+    fontSize: 17,
     fontWeight: '500',
     letterSpacing: 0,
-    marginBottom: 32
+    marginBottom: 22
   },
   title: {
     color: loginColors.surfaceCard,
-    fontSize: 56,
+    fontSize: 36,
     fontWeight: '900',
     letterSpacing: 0,
-    lineHeight: 64,
-    marginBottom: 24
+    lineHeight: 44,
+    marginBottom: 8
   }
 });

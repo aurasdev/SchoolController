@@ -34,9 +34,9 @@ const styles = StyleSheet.create({
   },
   logoSmall: {
     backgroundColor: loginColors.surfaceCard,
-    borderRadius: 8,
-    height: 50,
-    width: 50
+    borderRadius: 6,
+    height: 32,
+    width: 32
   },
   logoText: {
     fontWeight: '900',
@@ -48,6 +48,6 @@ const styles = StyleSheet.create({
   },
   logoTextSmall: {
     color: loginColors.primary,
-    fontSize: 30
+    fontSize: 19
   }
 });

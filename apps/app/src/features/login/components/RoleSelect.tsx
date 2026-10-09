@@ -81,21 +81,21 @@ const styles = StyleSheet.create({
   },
   help: {
     color: loginColors.textSecondary,
-    fontSize: 17,
+    fontSize: 14,
     fontWeight: '500',
     letterSpacing: 0,
-    lineHeight: 24,
+    lineHeight: 20,
     marginTop: 8
   },
   icon: {
     color: loginColors.textSecondary,
-    fontSize: 18,
+    fontSize: 15,
     fontWeight: '800',
     letterSpacing: 0
   },
   label: {
     color: loginColors.textPrimary,
-    fontSize: 15,
+    fontSize: 12,
     fontWeight: '700',
     letterSpacing: 0,
     marginBottom: 8
@@ -108,7 +108,7 @@ const styles = StyleSheet.create({
     left: 0,
     position: 'absolute',
     right: 0,
-    top: 84,
+    top: 72,
     zIndex: 5
   },
   menuItem: {
@@ -117,7 +117,7 @@ const styles = StyleSheet.create({
   },
   menuText: {
     color: loginColors.textPrimary,
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '600',
     letterSpacing: 0
   },
@@ -127,13 +127,13 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     borderWidth: 1,
     flexDirection: 'row',
-    height: 58,
+    height: 46,
     justifyContent: 'space-between',
     paddingHorizontal: 16
   },
   value: {
     color: loginColors.textSecondary,
-    fontSize: 20,
+    fontSize: 16,
     fontWeight: '500',
     letterSpacing: 0
   }

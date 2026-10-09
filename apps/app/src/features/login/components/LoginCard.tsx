@@ -81,7 +81,7 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginTop: 26,
+    marginTop: 20,
     rowGap: 12
   },
   card: {
@@ -89,9 +89,9 @@ const styles = StyleSheet.create({
     borderColor: loginColors.surfaceBorder,
     borderRadius: 8,
     borderWidth: 1,
-    maxWidth: 500,
-    paddingHorizontal: 48,
-    paddingVertical: 44,
+    maxWidth: 420,
+    paddingHorizontal: 36,
+    paddingVertical: 34,
     shadowColor: '#101114',
     shadowOffset: { height: 18, width: 0 },
     shadowOpacity: 0.08,
@@ -104,20 +104,20 @@ const styles = StyleSheet.create({
   },
   contactText: {
     color: loginColors.textSecondary,
-    fontSize: 14,
+    fontSize: 11,
     fontWeight: '600',
     letterSpacing: 0,
-    marginTop: 34
+    marginTop: 22
   },
   forgotLink: {
     alignItems: 'flex-end',
     flexGrow: 1,
     flexShrink: 0,
-    minWidth: 190
+    minWidth: 150
   },
   linkText: {
     color: loginColors.primary,
-    fontSize: 16,
+    fontSize: 13,
     fontWeight: '600',
     letterSpacing: 0,
     textAlign: 'right'
@@ -126,13 +126,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: loginColors.primary,
     borderRadius: 8,
-    height: 52,
+    height: 46,
     justifyContent: 'center',
-    marginTop: 28
+    marginTop: 22
   },
   primaryButtonText: {
     color: loginColors.surfaceCard,
-    fontSize: 21,
+    fontSize: 17,
     fontWeight: '800',
     letterSpacing: 0
   },
@@ -144,21 +144,21 @@ const styles = StyleSheet.create({
   },
   rememberText: {
     color: loginColors.textPrimary,
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: '700',
     letterSpacing: 0
   },
   subtitle: {
     color: loginColors.textSecondary,
-    fontSize: 17,
+    fontSize: 14,
     fontWeight: '500',
     letterSpacing: 0,
-    lineHeight: 25,
-    marginBottom: 36
+    lineHeight: 20,
+    marginBottom: 26
   },
   supportMuted: {
     color: loginColors.textSecondary,
-    fontSize: 16,
+    fontSize: 13,
     fontWeight: '500',
     letterSpacing: 0
   },
@@ -166,14 +166,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     flexDirection: 'row',
     justifyContent: 'center',
-    marginTop: 28
+    marginTop: 22
   },
   title: {
     color: loginColors.textPrimary,
-    fontSize: 32,
+    fontSize: 28,
     fontWeight: '900',
     letterSpacing: 0,
-    lineHeight: 38,
+    lineHeight: 34,
     marginBottom: 12
   },
   wrap: {
