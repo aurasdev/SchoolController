@@ -58,7 +58,7 @@ export function AdminDashboardScreen({ onSignOut, user }: AdminDashboardScreenPr
 
 const styles = StyleSheet.create({
   content: {
-    alignSelf: 'flex-start',
+    alignSelf: 'center',
     maxWidth: 1232,
     padding: 24,
     width: '100%'
