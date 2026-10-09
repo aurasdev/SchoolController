@@ -6,6 +6,6 @@ type AuthenticatedExperienceProps = {
   user: AuthenticatedUser;
 };
 
-export function AuthenticatedExperience(_props: AuthenticatedExperienceProps) {
-  return <UnderDevelopmentScreen />;
+export function AuthenticatedExperience({ onSignOut }: AuthenticatedExperienceProps) {
+  return <UnderDevelopmentScreen onSignOut={onSignOut} />;
 }

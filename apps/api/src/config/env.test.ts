@@ -7,6 +7,7 @@ const databaseUrl = 'postgresql://user:password@localhost:5432/school_controller
 describe('getEnvironment', () => {
   it('loads valid values and applies development defaults', () => {
     expect(getEnvironment({ DATABASE_URL: databaseUrl })).toEqual({
+      corsOrigins: ['http://localhost:8081'],
       databaseUrl,
       nodeEnv: 'development',
       port: 4000

@@ -1,18 +1,13 @@
 import { useCallback, useReducer } from 'react';
 
-import { demoAdminCredentials, demoAdminUser, loginCopy } from '@/features/login/content';
-import type {
-  AuthenticatedUser,
-  LoginFormHandlers,
-  LoginFormState,
-  LoginRole
-} from '@/features/login/types';
+import { AuthApiError, login } from '@/features/login/auth-api';
+import { loginCopy } from '@/features/login/content';
+import type { AuthenticatedUser, LoginFormHandlers, LoginFormState } from '@/features/login/types';
 
 type LoginFormAction =
   | { type: 'emailChanged'; value: string }
   | { type: 'passwordChanged'; value: string }
   | { type: 'rememberSessionChanged'; value: boolean }
-  | { type: 'roleChanged'; value: LoginRole }
   | { type: 'submitted'; value: LoginFormState['status'] };
 
 type UseLoginFormOptions = {
@@ -23,7 +18,6 @@ const initialState: LoginFormState = {
   email: '',
   password: '',
   rememberSession: false,
-  role: 'Alumno',
   status: 'idle'
 };
 
@@ -55,11 +49,6 @@ function loginFormReducer(state: LoginFormState, action: LoginFormAction): Login
         ...state,
         rememberSession: action.value
       };
-    case 'roleChanged':
-      return resetFeedback({
-        ...state,
-        role: action.value
-      });
     case 'submitted':
       return {
         ...state,
@@ -74,14 +63,7 @@ function hasRequiredCredentials({ email, password }: LoginFormState) {
   return email.trim().length > 0 && password.trim().length > 0;
 }
 
-function hasValidDemoCredentials({ email, password }: LoginFormState) {
-  return (
-    email.trim().toLowerCase() === demoAdminCredentials.email &&
-    password === demoAdminCredentials.password
-  );
-}
-
-function getFeedbackText({ role, status }: LoginFormState) {
+function getFeedbackText({ status }: LoginFormState) {
   if (status === 'missingFields') {
     return loginCopy.feedback.missingFields;
   }
@@ -90,8 +72,16 @@ function getFeedbackText({ role, status }: LoginFormState) {
     return loginCopy.feedback.invalidCredentials;
   }
 
+  if (status === 'networkError') {
+    return loginCopy.feedback.networkError;
+  }
+
+  if (status === 'submitting') {
+    return loginCopy.feedback.submitting;
+  }
+
   if (status === 'success') {
-    return `${loginCopy.feedback.successPrefix} ${role}.`;
+    return loginCopy.feedback.success;
   }
 
   return loginCopy.feedback.idle;
@@ -112,30 +102,42 @@ export function useLoginForm({ onAuthenticated }: UseLoginFormOptions) {
     dispatch({ type: 'rememberSessionChanged', value });
   }, []);
 
-  const onRoleChange = useCallback((value: LoginRole) => {
-    dispatch({ type: 'roleChanged', value });
-  }, []);
-
   const onSubmit = useCallback(() => {
+    if (state.status === 'submitting') {
+      return;
+    }
+
     if (!hasRequiredCredentials(state)) {
       dispatch({ type: 'submitted', value: 'missingFields' });
       return;
     }
 
-    if (!hasValidDemoCredentials(state)) {
-      dispatch({ type: 'submitted', value: 'invalidCredentials' });
-      return;
-    }
+    dispatch({ type: 'submitted', value: 'submitting' });
 
-    dispatch({ type: 'submitted', value: 'success' });
-    onAuthenticated(demoAdminUser);
+    void login({
+      email: state.email.trim().toLowerCase(),
+      password: state.password,
+      rememberSession: state.rememberSession
+    })
+      .then((user) => {
+        dispatch({ type: 'submitted', value: 'success' });
+        onAuthenticated(user);
+      })
+      .catch((error: unknown) => {
+        dispatch({
+          type: 'submitted',
+          value:
+            error instanceof AuthApiError && error.code === 'INVALID_CREDENTIALS'
+              ? 'invalidCredentials'
+              : 'networkError'
+        });
+      });
   }, [onAuthenticated, state]);
 
   const handlers: LoginFormHandlers = {
     onEmailChange,
     onPasswordChange,
     onRememberSessionChange,
-    onRoleChange,
     onSubmit
   };
 

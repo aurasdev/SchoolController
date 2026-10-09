@@ -1,7 +1,7 @@
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Switch, Text, View } from 'react-native';
 
 import { loginCopy } from '@/features/login/content';
-import { loginColors } from '@/features/login/tokens';
+import { loginColors, rememberSwitchTrackColor } from '@/features/login/tokens';
 import type { LoginFormHandlers, LoginFormState } from '@/features/login/types';
 
 import { CredentialFields } from '@/features/login/components/CredentialFields';
@@ -37,13 +37,28 @@ export function MobileLoginForm({ feedbackText, handlers, state }: MobileLoginFo
             <Text style={styles.linkText}>{loginCopy.form.forgotPassword}</Text>
           </Pressable>
 
+          <View style={styles.rememberRow}>
+            <Switch
+              accessibilityLabel={loginCopy.form.rememberSession}
+              onValueChange={handlers.onRememberSessionChange}
+              thumbColor={loginColors.surfaceCard}
+              trackColor={rememberSwitchTrackColor}
+              value={state.rememberSession}
+            />
+            <Text style={styles.rememberText}>{loginCopy.form.rememberSession}</Text>
+          </View>
+
           <Pressable
             accessibilityRole="button"
+            accessibilityState={{ disabled: state.status === 'submitting' }}
+            disabled={state.status === 'submitting'}
             focusable
             onPress={handlers.onSubmit}
             style={styles.primaryButton}
           >
-            <Text style={styles.primaryButtonText}>{loginCopy.form.submit}</Text>
+            <Text style={styles.primaryButtonText}>
+              {state.status === 'submitting' ? loginCopy.form.submitting : loginCopy.form.submit}
+            </Text>
           </Pressable>
         </View>
       </View>
@@ -92,6 +107,18 @@ const styles = StyleSheet.create({
     color: loginColors.surfaceCard,
     fontSize: 18,
     fontWeight: '800',
+    letterSpacing: 0
+  },
+  rememberRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 8,
+    marginTop: 18
+  },
+  rememberText: {
+    color: loginColors.textPrimary,
+    fontSize: 14,
+    fontWeight: '700',
     letterSpacing: 0
   },
   subtitle: {
