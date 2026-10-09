@@ -18,6 +18,7 @@
     "ios": "npm run ios -w @school-controller/app",
     "build": "turbo build",
     "lint": "turbo lint",
+    "test": "turbo test",
     "typecheck": "turbo typecheck",
     "format": "prettier . --write",
     "format:check": "prettier . --check",

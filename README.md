@@ -52,6 +52,8 @@ cp .env.example .env
 The example file contains local development values only:
 
 - `DATABASE_URL`: PostgreSQL connection string used by Prisma.
+- `POSTGRES_PORT`: host port exposed by the PostgreSQL container. It defaults to `5433` to avoid
+  conflicts with locally installed PostgreSQL instances.
 - `PORT`: API port. The default development value is `4000`.
 - `EXPO_PUBLIC_API_URL`: public Expo variable used by the client.
 
@@ -72,12 +74,60 @@ npm run db:down
 ```
 
 The Docker service creates a local `school_controller` database with a persistent volume.
+PostgreSQL is exposed on host port `5433` by default so it can run alongside a local PostgreSQL
+installation that uses the standard `5432` port.
 
 Apply the pending Prisma migrations and generate the client:
 
 ```bash
 npm run db:migrate
 npm run db:generate
+```
+
+## API foundation
+
+The Express API validates its environment before startup and establishes a PostgreSQL connection
+through the Prisma 7 PostgreSQL driver adapter. Start it after the database and migrations are
+ready:
+
+```bash
+npm run dev:api
+```
+
+The health endpoint verifies both the HTTP server and the live database connection:
+
+```bash
+curl http://localhost:4000/health
+```
+
+A healthy response has this shape:
+
+```json
+{
+  "services": {
+    "database": "up"
+  },
+  "status": "ok",
+  "timestamp": "2026-10-09T05:21:27.052Z"
+}
+```
+
+API errors use a consistent response structure. For example, an unavailable database returns HTTP
+`503` with:
+
+```json
+{
+  "error": {
+    "code": "DATABASE_UNAVAILABLE",
+    "message": "The database service is unavailable."
+  }
+}
+```
+
+Run the backend test suite with:
+
+```bash
+npm run test -w @school-controller/api
 ```
 
 ## Development
