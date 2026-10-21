@@ -44,3 +44,6 @@ Thumbs.db
 
 # Misc
 *.tsbuildinfo
+
+# graphify (local knowledge graph)
+graphify-out/

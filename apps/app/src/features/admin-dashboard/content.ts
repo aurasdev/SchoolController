@@ -52,11 +52,12 @@ export const dashboardCopy = {
 
 export const dashboardNavItems: DashboardNavItem[] = [
   { id: 'dashboard', label: 'Dashboard' },
-  { id: 'schedule', label: 'Schedule' },
-  { id: 'classes', label: 'Classes' },
-  { id: 'teachers', label: 'Teachers' },
-  { id: 'students', label: 'Students' },
-  { id: 'settings', label: 'Settings' }
+  { id: 'schedule', label: 'Horario' },
+  { id: 'classes', label: 'Clases' },
+  { id: 'teachers', label: 'Maestros' },
+  { id: 'students', label: 'Alumnos' },
+  { id: 'classrooms', label: 'Aulas' },
+  { id: 'settings', label: 'Configuración' }
 ];
 
 export const dashboardStats: DashboardStat[] = [

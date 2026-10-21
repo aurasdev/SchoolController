@@ -1,5 +1,5 @@
 export type DashboardSection =
-  'dashboard' | 'schedule' | 'classes' | 'teachers' | 'students' | 'settings';
+  'dashboard' | 'schedule' | 'classes' | 'teachers' | 'students' | 'classrooms' | 'settings';
 
 export type DashboardNavItem = {
   id: DashboardSection;
