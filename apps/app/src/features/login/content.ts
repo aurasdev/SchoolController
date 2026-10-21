@@ -1,20 +1,3 @@
-import type { LoginRole } from '@/features/login/types';
-
-export const loginRoles: LoginRole[] = ['Alumno', 'Docente', 'Coordinador', 'Administrador'];
-
-export const demoAdminCredentials = {
-  email: 'admin@escuela.edu',
-  password: 'Admin123'
-} as const;
-
-export const demoAdminUser = {
-  email: demoAdminCredentials.email,
-  institution: 'IEST ANÁHUAC',
-  initials: 'AD',
-  name: 'Adán Castillo',
-  role: 'Administrador'
-} as const;
-
 export const loginCopy = {
   brand: {
     institution: 'IEST Anáhuac',
@@ -32,11 +15,10 @@ export const loginCopy = {
     emailPlaceholder: 'correo@escuela.edu',
     passwordLabel: 'Contraseña',
     passwordPlaceholder: '••••••••',
-    roleLabel: 'Selecciona tu rol',
-    roleHelp: 'Determina tus permisos de acceso en la plataforma',
     rememberSession: 'Recordar sesión',
     forgotPassword: '¿Olvidaste tu contraseña?',
     submit: 'Iniciar Sesión',
+    submitting: 'Iniciando sesión...',
     supportQuestion: '¿Necesitas ayuda?',
     supportLink: 'Soporte técnico',
     contactPrefix: 'Contacto de atención:',
@@ -46,8 +28,10 @@ export const loginCopy = {
   },
   feedback: {
     idle: 'Usa tu cuenta institucional',
-    invalidCredentials: 'Credenciales incorrectas. Usa la cuenta administrador de demostración.',
+    invalidCredentials: 'El correo o la contraseña son incorrectos.',
     missingFields: 'Ingresa tu correo institucional y contraseña para continuar.',
-    successPrefix: 'Credenciales listas para iniciar como'
+    networkError: 'No fue posible conectar con el servidor. Intenta nuevamente.',
+    submitting: 'Verificando tus credenciales...',
+    success: 'Sesión iniciada correctamente.'
   }
 } as const;

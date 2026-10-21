@@ -1,12 +1,12 @@
-export type LoginRole = 'Alumno' | 'Docente' | 'Coordinador' | 'Administrador';
+export type UserRole = 'STUDENT' | 'TEACHER' | 'COORDINATOR' | 'ADMIN';
 
-export type LoginStatus = 'idle' | 'missingFields' | 'invalidCredentials' | 'success';
+export type LoginStatus =
+  'idle' | 'invalidCredentials' | 'missingFields' | 'networkError' | 'submitting' | 'success';
 
 export type LoginFormState = {
   email: string;
   password: string;
   rememberSession: boolean;
-  role: LoginRole;
   status: LoginStatus;
 };
 
@@ -14,14 +14,16 @@ export type LoginFormHandlers = {
   onEmailChange: (value: string) => void;
   onPasswordChange: (value: string) => void;
   onRememberSessionChange: (value: boolean) => void;
-  onRoleChange: (role: LoginRole) => void;
   onSubmit: () => void;
 };
 
 export type AuthenticatedUser = {
   email: string;
+  firstName: string;
+  id: string;
   institution: string;
   initials: string;
+  lastName: string;
   name: string;
-  role: LoginRole;
+  role: UserRole;
 };
