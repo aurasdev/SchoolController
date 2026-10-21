@@ -2,6 +2,7 @@ import { StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { loginCopy } from '@/features/login/content';
 import { loginColors } from '@/features/login/tokens';
+import type { LoginStatus } from '@/features/login/types';
 
 type CredentialFieldsProps = {
   email: string;
@@ -10,7 +11,7 @@ type CredentialFieldsProps = {
   onPasswordChange: (value: string) => void;
   onSubmit: () => void;
   password: string;
-  status: 'idle' | 'missingFields' | 'invalidCredentials' | 'success';
+  status: LoginStatus;
   variant: 'desktop' | 'mobile';
 };
 
@@ -27,7 +28,8 @@ export function CredentialFields({
   const isMobile = variant === 'mobile';
   const feedbackStyles = [
     isMobile ? styles.mobileFeedback : styles.desktopFeedback,
-    (status === 'missingFields' || status === 'invalidCredentials') && styles.errorText,
+    (status === 'missingFields' || status === 'invalidCredentials' || status === 'networkError') &&
+      styles.errorText,
     status === 'success' && styles.successText
   ];
 
@@ -40,6 +42,7 @@ export function CredentialFields({
         accessibilityLabel={loginCopy.form.emailLabel}
         autoCapitalize="none"
         autoComplete="email"
+        editable={status !== 'submitting'}
         inputMode="email"
         onChangeText={onEmailChange}
         onSubmitEditing={onSubmit}
@@ -64,6 +67,7 @@ export function CredentialFields({
       <TextInput
         accessibilityLabel={loginCopy.form.passwordLabel}
         autoCapitalize="none"
+        editable={status !== 'submitting'}
         onChangeText={onPasswordChange}
         onSubmitEditing={onSubmit}
         placeholder={loginCopy.form.passwordPlaceholder}

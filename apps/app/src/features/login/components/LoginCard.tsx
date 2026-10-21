@@ -5,7 +5,6 @@ import { loginColors, rememberSwitchTrackColor } from '@/features/login/tokens';
 import type { LoginFormHandlers, LoginFormState } from '@/features/login/types';
 
 import { CredentialFields } from '@/features/login/components/CredentialFields';
-import { RoleSelect } from '@/features/login/components/RoleSelect';
 
 type LoginCardProps = {
   feedbackText: string;
@@ -19,8 +18,6 @@ export function LoginCard({ feedbackText, handlers, state }: LoginCardProps) {
       <View style={styles.card}>
         <Text style={styles.title}>{loginCopy.form.title}</Text>
         <Text style={styles.subtitle}>{loginCopy.form.subtitle}</Text>
-
-        <RoleSelect onRoleChange={handlers.onRoleChange} selectedRole={state.role} />
 
         <CredentialFields
           email={state.email}
@@ -51,11 +48,15 @@ export function LoginCard({ feedbackText, handlers, state }: LoginCardProps) {
 
         <Pressable
           accessibilityRole="button"
+          accessibilityState={{ disabled: state.status === 'submitting' }}
+          disabled={state.status === 'submitting'}
           focusable
           onPress={handlers.onSubmit}
           style={styles.primaryButton}
         >
-          <Text style={styles.primaryButtonText}>{loginCopy.form.submit}</Text>
+          <Text style={styles.primaryButtonText}>
+            {state.status === 'submitting' ? loginCopy.form.submitting : loginCopy.form.submit}
+          </Text>
         </Pressable>
 
         <View style={styles.supportRow}>

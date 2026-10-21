@@ -9,6 +9,7 @@ config({
 const DEFAULT_PORT = 4000;
 
 export type AppEnvironment = {
+  corsOrigins: string[];
   databaseUrl: string;
   nodeEnv: 'development' | 'production' | 'test';
   port: number;
@@ -64,6 +65,10 @@ function readNodeEnvironment(value: string | undefined): AppEnvironment['nodeEnv
 
 export function getEnvironment(source: NodeJS.ProcessEnv = process.env): AppEnvironment {
   return {
+    corsOrigins: (source.CORS_ORIGINS ?? 'http://localhost:8081')
+      .split(',')
+      .map((origin) => origin.trim())
+      .filter(Boolean),
     databaseUrl: readDatabaseUrl(source.DATABASE_URL),
     nodeEnv: readNodeEnvironment(source.NODE_ENV),
     port: readPort(source.PORT)
