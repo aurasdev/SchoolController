@@ -1,4 +1,12 @@
-import { type KeyboardTypeOptions, StyleSheet, Text, TextInput, View } from 'react-native';
+import {
+  type KeyboardTypeOptions,
+  type StyleProp,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+  type ViewStyle
+} from 'react-native';
 
 import { dashboardColors } from '@/features/admin-dashboard/tokens';
 
@@ -9,6 +17,7 @@ type AddClassFormFieldProps = {
   onChangeText: (value: string) => void;
   onSubmit: () => void;
   placeholder: string;
+  style?: StyleProp<ViewStyle>;
   value: string;
 };
 
@@ -19,10 +28,11 @@ export function AddClassFormField({
   onChangeText,
   onSubmit,
   placeholder,
+  style,
   value
 }: AddClassFormFieldProps) {
   return (
-    <View style={styles.field}>
+    <View style={[styles.field, style]}>
       <Text style={styles.label}>{label}</Text>
       <TextInput
         accessibilityLabel={label}

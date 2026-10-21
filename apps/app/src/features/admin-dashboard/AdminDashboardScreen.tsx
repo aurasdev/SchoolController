@@ -1,5 +1,5 @@
 import { SafeAreaView, ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
-import { useCallback, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 
 import { AdminScheduleView } from '@/features/admin-dashboard/components/AdminScheduleView';
 import { DashboardCompactNav } from '@/features/admin-dashboard/components/DashboardCompactNav';
@@ -9,6 +9,8 @@ import { DashboardSidebar } from '@/features/admin-dashboard/components/Dashboar
 import { dashboardBreakpoints, dashboardColors } from '@/features/admin-dashboard/tokens';
 import type { DashboardSection } from '@/features/admin-dashboard/types';
 import { ClassroomsView, useClassrooms } from '@/features/classrooms';
+import { ClassesView } from '@/features/classes/components/ClassesView';
+import { useClasses } from '@/features/classes/useClasses';
 import type { AuthenticatedUser } from '@/features/login/types';
 
 type AdminDashboardScreenProps = {
@@ -21,9 +23,16 @@ export function AdminDashboardScreen({ onSignOut, user }: AdminDashboardScreenPr
   const isCompact = width < dashboardBreakpoints.compact;
   const [activeSection, setActiveSection] = useState<DashboardSection>('dashboard');
   const classrooms = useClassrooms();
+  const classes = useClasses();
+  const contentRef = useRef<ScrollView>(null);
+
+  const handleViewChange = useCallback(() => {
+    contentRef.current?.scrollTo({ animated: false, y: 0 });
+  }, []);
 
   const handleNavigate = useCallback((section: DashboardSection) => {
     setActiveSection(section);
+    contentRef.current?.scrollTo({ animated: false, y: 0 });
   }, []);
 
   const handleConfigureSchedule = useCallback(() => {
@@ -45,10 +54,19 @@ export function AdminDashboardScreen({ onSignOut, user }: AdminDashboardScreenPr
           {isCompact ? (
             <DashboardCompactNav activeSection={activeSection} onNavigate={handleNavigate} />
           ) : null}
-          <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+          <ScrollView
+            contentContainerStyle={styles.content}
+            ref={contentRef}
+            showsVerticalScrollIndicator={false}
+          >
             {activeSection === 'schedule' ? <AdminScheduleView /> : null}
             {activeSection === 'classrooms' ? <ClassroomsView store={classrooms} /> : null}
-            {activeSection !== 'schedule' && activeSection !== 'classrooms' ? (
+            {activeSection === 'classes' ? (
+              <ClassesView onViewChange={handleViewChange} store={classes} />
+            ) : null}
+            {activeSection !== 'schedule' &&
+            activeSection !== 'classrooms' &&
+            activeSection !== 'classes' ? (
               <DashboardOverview
                 isCompact={isCompact}
                 onConfigureSchedule={handleConfigureSchedule}
@@ -69,7 +87,8 @@ const styles = StyleSheet.create({
     width: '100%'
   },
   mainArea: {
-    flex: 1
+    flex: 1,
+    minWidth: 0
   },
   screen: {
     backgroundColor: dashboardColors.surface,
