@@ -1,8 +1,10 @@
-import { StyleSheet, Text, TextInput, View } from 'react-native';
+import { type KeyboardTypeOptions, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { dashboardColors } from '@/features/admin-dashboard/tokens';
 
 type AddClassFormFieldProps = {
+  error?: string;
+  keyboardType?: KeyboardTypeOptions;
   label: string;
   onChangeText: (value: string) => void;
   onSubmit: () => void;
@@ -11,6 +13,8 @@ type AddClassFormFieldProps = {
 };
 
 export function AddClassFormField({
+  error,
+  keyboardType,
   label,
   onChangeText,
   onSubmit,
@@ -22,19 +26,32 @@ export function AddClassFormField({
       <Text style={styles.label}>{label}</Text>
       <TextInput
         accessibilityLabel={label}
+        keyboardType={keyboardType}
         onChangeText={onChangeText}
         onSubmitEditing={onSubmit}
         placeholder={placeholder}
         placeholderTextColor={dashboardColors.textMuted}
         returnKeyType="next"
-        style={styles.input}
+        style={[styles.input, error ? styles.inputError : null]}
         value={value}
       />
+      {error ? (
+        <Text accessibilityLiveRegion="polite" style={styles.error}>
+          {error}
+        </Text>
+      ) : null}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
+  error: {
+    color: '#e2252a',
+    fontSize: 12,
+    fontWeight: '600',
+    letterSpacing: 0,
+    marginTop: 6
+  },
   field: {
     flex: 1,
     minWidth: 240
@@ -49,6 +66,9 @@ const styles = StyleSheet.create({
     letterSpacing: 0,
     marginTop: 8,
     paddingHorizontal: 14
+  },
+  inputError: {
+    borderColor: '#e2252a'
   },
   label: {
     color: dashboardColors.textPrimary,

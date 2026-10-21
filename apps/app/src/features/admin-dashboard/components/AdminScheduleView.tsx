@@ -139,16 +139,18 @@ const styles = StyleSheet.create({
     letterSpacing: 0
   },
   subtitle: {
-    color: dashboardColors.textSecondary,
-    fontSize: 15,
-    fontWeight: '600',
+    color: dashboardColors.textMuted,
+    fontSize: 14,
+    fontWeight: '400',
     letterSpacing: 0,
-    marginTop: 8
+    lineHeight: 20,
+    marginTop: 4
   },
   title: {
     color: dashboardColors.textPrimary,
-    fontSize: 28,
-    fontWeight: '900',
-    letterSpacing: 0
+    fontSize: 24,
+    fontWeight: '700',
+    letterSpacing: 0,
+    lineHeight: 32
   }
 });
