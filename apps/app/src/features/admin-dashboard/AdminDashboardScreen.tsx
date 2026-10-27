@@ -8,6 +8,8 @@ import { DashboardOverview } from '@/features/admin-dashboard/components/Dashboa
 import { DashboardSidebar } from '@/features/admin-dashboard/components/DashboardSidebar';
 import { dashboardBreakpoints, dashboardColors } from '@/features/admin-dashboard/tokens';
 import type { DashboardSection } from '@/features/admin-dashboard/types';
+import { ClassesView } from '@/features/classes/ClassesView';
+import { initialClasses } from '@/features/classes/content';
 import { ClassroomsView, useClassrooms } from '@/features/classrooms';
 import type { AuthenticatedUser } from '@/features/login/types';
 
@@ -21,6 +23,7 @@ export function AdminDashboardScreen({ onSignOut, user }: AdminDashboardScreenPr
   const isCompact = width < dashboardBreakpoints.compact;
   const [activeSection, setActiveSection] = useState<DashboardSection>('dashboard');
   const classrooms = useClassrooms();
+  const [classes, setClasses] = useState(initialClasses);
 
   const handleNavigate = useCallback((section: DashboardSection) => {
     setActiveSection(section);
@@ -48,7 +51,12 @@ export function AdminDashboardScreen({ onSignOut, user }: AdminDashboardScreenPr
           <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
             {activeSection === 'schedule' ? <AdminScheduleView /> : null}
             {activeSection === 'classrooms' ? <ClassroomsView store={classrooms} /> : null}
-            {activeSection !== 'schedule' && activeSection !== 'classrooms' ? (
+            {activeSection === 'classes' ? (
+              <ClassesView classes={classes} onChange={setClasses} />
+            ) : null}
+            {activeSection !== 'schedule' &&
+            activeSection !== 'classrooms' &&
+            activeSection !== 'classes' ? (
               <DashboardOverview
                 isCompact={isCompact}
                 onConfigureSchedule={handleConfigureSchedule}
