@@ -12,6 +12,10 @@ import { ClassesView } from '@/features/classes/ClassesView';
 import { initialClasses } from '@/features/classes/content';
 import { ClassroomsView, useClassrooms } from '@/features/classrooms';
 import type { AuthenticatedUser } from '@/features/login/types';
+import { StudentsView } from '@/features/students/StudentsView';
+import { initialStudents } from '@/features/students/content';
+import { TeachersView } from '@/features/teachers/TeachersView';
+import { initialTeachers } from '@/features/teachers/content';
 
 type AdminDashboardScreenProps = {
   onSignOut: () => void;
@@ -24,6 +28,8 @@ export function AdminDashboardScreen({ onSignOut, user }: AdminDashboardScreenPr
   const [activeSection, setActiveSection] = useState<DashboardSection>('dashboard');
   const classrooms = useClassrooms();
   const [classes, setClasses] = useState(initialClasses);
+  const [students, setStudents] = useState(initialStudents);
+  const [teachers, setTeachers] = useState(initialTeachers);
 
   const handleNavigate = useCallback((section: DashboardSection) => {
     setActiveSection(section);
@@ -54,9 +60,17 @@ export function AdminDashboardScreen({ onSignOut, user }: AdminDashboardScreenPr
             {activeSection === 'classes' ? (
               <ClassesView classes={classes} onChange={setClasses} />
             ) : null}
+            {activeSection === 'students' ? (
+              <StudentsView students={students} onChange={setStudents} />
+            ) : null}
+            {activeSection === 'teachers' ? (
+              <TeachersView teachers={teachers} onChange={setTeachers} />
+            ) : null}
             {activeSection !== 'schedule' &&
             activeSection !== 'classrooms' &&
-            activeSection !== 'classes' ? (
+            activeSection !== 'classes' &&
+            activeSection !== 'students' &&
+            activeSection !== 'teachers' ? (
               <DashboardOverview
                 isCompact={isCompact}
                 onConfigureSchedule={handleConfigureSchedule}
