@@ -1,22 +1,18 @@
 import { StyleSheet, Text, View } from 'react-native';
 
-import {
-  scheduleDays,
-  scheduleHours,
-  weeklyScheduleClasses
-} from '@/features/admin-dashboard/scheduleContent';
+import { academicDays, dayLabels } from '@/features/academic/presentation';
 import { dashboardColors } from '@/features/admin-dashboard/tokens';
 import type { WeeklyScheduleClass } from '@/features/admin-dashboard/types';
 
-const gridStartHour = 8;
 const rowHeight = 92;
 const timeColumnWidth = 96;
 
 type ClassBlockProps = {
   classItem: WeeklyScheduleClass;
+  gridStartHour: number;
 };
 
-function ClassBlock({ classItem }: ClassBlockProps) {
+function ClassBlock({ classItem, gridStartHour }: ClassBlockProps) {
   const top = (classItem.startHour - gridStartHour) * rowHeight;
   const height = (classItem.endHour - classItem.startHour) * rowHeight - 4;
 
@@ -45,11 +41,20 @@ function ClassBlock({ classItem }: ClassBlockProps) {
   );
 }
 
-export function WeeklyScheduleGrid() {
+export function WeeklyScheduleGrid({ classes }: { classes: WeeklyScheduleClass[] }) {
+  const gridStartHour = Math.min(8, ...classes.map((item) => Math.floor(item.startHour)));
+  const endHour = Math.max(17, ...classes.map((item) => Math.ceil(item.endHour)));
+  const scheduleHours = Array.from(
+    { length: endHour - gridStartHour },
+    (_, index) => `${String(index + gridStartHour).padStart(2, '0')}:00`
+  );
+  const scheduleDays = academicDays
+    .filter((day, index) => index < 5 || classes.some((item) => item.day === dayLabels[day]))
+    .map((day) => dayLabels[day]);
   return (
     <View style={styles.gridCard}>
       <View style={styles.headerRow}>
-        <Text style={styles.timeHeader}>TIME</Text>
+        <Text style={styles.timeHeader}>HORA</Text>
         {scheduleDays.map((day) => (
           <Text key={day} style={styles.dayHeader}>
             {day}
@@ -57,7 +62,7 @@ export function WeeklyScheduleGrid() {
         ))}
       </View>
 
-      <View style={styles.body}>
+      <View style={[styles.body, { minHeight: rowHeight * scheduleHours.length }]}>
         <View style={styles.timeColumn}>
           {scheduleHours.map((hour) => (
             <View key={hour} style={styles.timeSlot}>
@@ -67,7 +72,7 @@ export function WeeklyScheduleGrid() {
         </View>
 
         {scheduleDays.map((day) => {
-          const dayClasses = weeklyScheduleClasses.filter((classItem) => classItem.day === day);
+          const dayClasses = classes.filter((classItem) => classItem.day === day);
 
           return (
             <View key={day} style={styles.dayColumn}>
@@ -75,7 +80,11 @@ export function WeeklyScheduleGrid() {
                 <View key={`${day}-${hour}`} style={styles.gridLine} />
               ))}
               {dayClasses.map((classItem) => (
-                <ClassBlock classItem={classItem} key={classItem.id} />
+                <ClassBlock
+                  classItem={classItem}
+                  gridStartHour={gridStartHour}
+                  key={classItem.id}
+                />
               ))}
             </View>
           );

@@ -1,3 +1,4 @@
+import type { AcademicData } from '@school-controller/shared';
 import { useState } from 'react';
 import {
   Pressable,
@@ -14,15 +15,20 @@ import { SelectField } from '@/features/classrooms/components/SelectField';
 import { ClassEditor } from '@/features/classes/components/ClassEditor';
 import { ClassesTable } from '@/features/classes/components/ClassesTable';
 import { CsvImport } from '@/features/classes/components/CsvImport';
-import { type AcademicClass, type ClassInput, teacherInitials } from '@/features/classes/content';
+import type { AcademicClass, ClassInput } from '@/features/classes/content';
 
-type Props = { classes: AcademicClass[]; onChange: (classes: AcademicClass[]) => void };
+type Props = {
+  data: AcademicData;
+  onSave: (input: ClassInput, id?: string) => Promise<void>;
+  onImport: (items: ClassInput[]) => Promise<void>;
+};
 type Tab = 'All Classes' | 'Active' | 'Pending';
 type Editor = { kind: 'create' } | { kind: 'edit'; item: AcademicClass } | { kind: 'import' };
 const pageSize = 8;
 const tabs: Tab[] = ['All Classes', 'Active', 'Pending'];
 
-export function ClassesView({ classes, onChange }: Props) {
+export function ClassesView({ data, onSave, onImport }: Props) {
+  const { classes } = data;
   const { width } = useWindowDimensions();
   const compact = width < 1100;
   const [query, setQuery] = useState('');
@@ -37,8 +43,10 @@ export function ClassesView({ classes, onChange }: Props) {
   const filtered = classes.filter(
     (item) =>
       item.name.toLowerCase().includes(query.trim().toLowerCase()) &&
-      (!department || item.department === department) &&
-      (!teacher || item.teacher === teacher) &&
+      (!department ||
+        data.subjects.find((subject) => subject.id === item.subjectId)?.departmentId ===
+          department) &&
+      (!teacher || item.teacherId === teacher) &&
       (!activeOnly || item.status === 'Active') &&
       (tab === 'All Classes' || item.status === tab)
   );
@@ -61,40 +69,18 @@ export function ClassesView({ classes, onChange }: Props) {
     setTab('All Classes');
     setPage(1);
   };
-  const save = (input: ClassInput) => {
+  const save = async (input: ClassInput) => {
+    await onSave(input, editor?.kind === 'edit' ? editor.item.id : undefined);
     if (editor?.kind === 'edit') {
-      onChange(
-        classes.map((item) =>
-          item.id === editor.item.id
-            ? {
-                ...item,
-                ...input,
-                initials:
-                  input.teacher === item.teacher ? item.initials : teacherInitials(input.teacher)
-              }
-            : item
-        )
-      );
       setFeedback('Class updated.');
     } else {
-      onChange([
-        { ...input, id: `class-${Date.now()}`, initials: teacherInitials(input.teacher) },
-        ...classes
-      ]);
       resetFilters();
       setFeedback('Class added.');
     }
     setEditor(undefined);
   };
-  const importClasses = (items: ClassInput[]) => {
-    onChange([
-      ...items.map((item, index) => ({
-        ...item,
-        id: `import-${Date.now()}-${index}`,
-        initials: teacherInitials(item.teacher)
-      })),
-      ...classes
-    ]);
+  const importClasses = async (items: ClassInput[]) => {
+    await onImport(items);
     resetFilters();
     setFeedback(`${items.length} classes imported.`);
     setEditor(undefined);
@@ -157,9 +143,7 @@ export function ClassesView({ classes, onChange }: Props) {
           }}
           options={[
             { label: 'All Departments', value: '' },
-            ...Array.from(new Set(classes.map((item) => item.department)))
-              .sort()
-              .map((value) => ({ label: value, value }))
+            ...data.departments.map((item) => ({ label: item.name, value: item.id }))
           ]}
           style={styles.select}
         />
@@ -172,9 +156,7 @@ export function ClassesView({ classes, onChange }: Props) {
           }}
           options={[
             { label: 'All Teachers', value: '' },
-            ...Array.from(new Set(classes.map((item) => item.teacher)))
-              .sort()
-              .map((value) => ({ label: value, value }))
+            ...data.teachers.map((item) => ({ label: item.name, value: item.id }))
           ]}
           style={styles.select}
         />
@@ -269,13 +251,14 @@ export function ClassesView({ classes, onChange }: Props) {
       </View>
       {editor?.kind === 'create' || editor?.kind === 'edit' ? (
         <ClassEditor
+          data={data}
           item={editor.kind === 'edit' ? editor.item : undefined}
           onClose={() => setEditor(undefined)}
           onSave={save}
         />
       ) : null}
       {editor?.kind === 'import' ? (
-        <CsvImport onClose={() => setEditor(undefined)} onImport={importClasses} />
+        <CsvImport data={data} onClose={() => setEditor(undefined)} onImport={importClasses} />
       ) : null}
     </View>
   );

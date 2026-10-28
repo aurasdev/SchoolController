@@ -1,2 +1,2 @@
 export { ClassroomsView } from './components/ClassroomsView';
-export { useClassrooms } from './useClassrooms';
+export type { ClassroomsStore } from './useClassrooms';

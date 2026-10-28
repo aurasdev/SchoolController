@@ -1,4 +1,6 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import type { AcademicData } from '@school-controller/shared';
+import { dashboardPresentation } from '@/features/academic/presentation';
 
 import { ActivityPanel } from '@/features/admin-dashboard/components/ActivityPanel';
 import { SchedulePanel } from '@/features/admin-dashboard/components/SchedulePanel';
@@ -8,11 +10,17 @@ import { dashboardCopy } from '@/features/admin-dashboard/content';
 import { dashboardColors } from '@/features/admin-dashboard/tokens';
 
 type DashboardOverviewProps = {
+  data: AcademicData;
   isCompact: boolean;
   onConfigureSchedule: () => void;
 };
 
-export function DashboardOverview({ isCompact, onConfigureSchedule }: DashboardOverviewProps) {
+export function DashboardOverview({
+  data,
+  isCompact,
+  onConfigureSchedule
+}: DashboardOverviewProps) {
+  const presentation = dashboardPresentation(data);
   return (
     <>
       <View style={[styles.headingRow, isCompact && styles.compactHeadingRow]}>
@@ -21,9 +29,6 @@ export function DashboardOverview({ isCompact, onConfigureSchedule }: DashboardO
           <Text style={styles.subtitle}>{dashboardCopy.subtitle}</Text>
         </View>
         <View style={styles.actions}>
-          <Pressable accessibilityRole="button" focusable style={styles.secondaryButton}>
-            <Text style={styles.secondaryButtonText}>{dashboardCopy.exportPdf}</Text>
-          </Pressable>
           <Pressable
             accessibilityRole="button"
             focusable
@@ -35,14 +40,14 @@ export function DashboardOverview({ isCompact, onConfigureSchedule }: DashboardO
         </View>
       </View>
 
-      <StatGrid isCompact={isCompact} />
+      <StatGrid isCompact={isCompact} stats={presentation.stats} />
 
       <View style={[styles.panelsRow, isCompact && styles.compactPanelsRow]}>
-        <SchedulePanel />
-        <ActivityPanel />
+        <SchedulePanel items={presentation.todaySchedule} />
+        <ActivityPanel items={presentation.activities} />
       </View>
 
-      <UpcomingClassesTable />
+      <UpcomingClassesTable items={presentation.upcoming} />
     </>
   );
 }

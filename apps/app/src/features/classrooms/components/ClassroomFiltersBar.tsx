@@ -5,7 +5,6 @@ import type { ClassroomStatus, ClassroomType } from '@school-controller/shared';
 import { dashboardColors } from '@/features/admin-dashboard/tokens';
 import { SelectField } from '@/features/classrooms/components/SelectField';
 import {
-  buildingFilterOptions,
   classroomsCopy,
   statusFilterOptions,
   typeFilterOptions
@@ -13,11 +12,12 @@ import {
 import type { ClassroomFilters } from '@/features/classrooms/types';
 
 type ClassroomFiltersBarProps = {
+  buildings: string[];
   filters: ClassroomFilters;
   onChange: (filters: ClassroomFilters) => void;
 };
 
-export function ClassroomFiltersBar({ filters, onChange }: ClassroomFiltersBarProps) {
+export function ClassroomFiltersBar({ buildings, filters, onChange }: ClassroomFiltersBarProps) {
   const handleSearchChange = useCallback(
     (search: string) => {
       onChange({ ...filters, search });
@@ -62,7 +62,10 @@ export function ClassroomFiltersBar({ filters, onChange }: ClassroomFiltersBarPr
       <SelectField
         label={classroomsCopy.building}
         onChange={handleBuildingChange}
-        options={buildingFilterOptions}
+        options={[
+          { label: classroomsCopy.allBuildings, value: '' },
+          ...buildings.map((value) => ({ label: value, value }))
+        ]}
         style={styles.field}
         value={filters.building}
       />

@@ -38,9 +38,10 @@ export function ClassesTable({ classes, onEdit }: Props) {
               key={item.id}
               style={[styles.row, index < classes.length - 1 && styles.divider]}
             >
-              <Text role="cell" style={[styles.text, { flex: columns[0].flex }]}>
-                {item.name}
-              </Text>
+              <View role="cell" style={{ flex: columns[0].flex }}>
+                <Text style={styles.text}>{item.name}</Text>
+                <Text style={styles.secondary}>{item.group}</Text>
+              </View>
               <Text role="cell" style={[styles.muted, { flex: columns[1].flex }]}>
                 {item.department}
               </Text>
@@ -50,9 +51,10 @@ export function ClassesTable({ classes, onEdit }: Props) {
                 </View>
                 <Text style={[styles.text, styles.teacherName]}>{item.teacher}</Text>
               </View>
-              <Text role="cell" style={[styles.muted, { flex: columns[3].flex }]}>
-                {item.schedule}
-              </Text>
+              <View role="cell" style={{ flex: columns[3].flex }}>
+                <Text style={styles.muted}>{item.schedule}</Text>
+                <Text style={styles.secondary}>Aula {item.room}</Text>
+              </View>
               <Text role="cell" style={[styles.text, { flex: columns[4].flex }]}>
                 {item.students} students
               </Text>
@@ -108,6 +110,7 @@ const styles = StyleSheet.create({
   headerText: { color: colors.textSecondary, fontSize: 11, fontWeight: '600', letterSpacing: 0.5 },
   text: { color: colors.textPrimary, fontSize: 13, lineHeight: 20 },
   muted: { color: colors.textSecondary, fontSize: 13, lineHeight: 20 },
+  secondary: { color: colors.textSecondary, fontSize: 11, lineHeight: 17 },
   teacher: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   teacherName: { flexShrink: 1 },
   avatar: {

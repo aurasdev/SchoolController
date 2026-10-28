@@ -1,35 +1,39 @@
-import { useState } from 'react';
+import type { Department, Teacher, TeacherInput } from '@school-controller/shared';
+import { useRef, useState } from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { AddClassFormField } from '@/features/admin-dashboard/components/AddClassFormField';
 import { dashboardColors as colors } from '@/features/admin-dashboard/tokens';
 import { SelectField } from '@/features/classrooms/components/SelectField';
-import {
-  type Teacher,
-  type TeacherInput,
-  type TeacherStatus,
-  teacherStatusOptions
-} from '@/features/teachers/content';
+import { teacherStatusOptions } from '@/features/teachers/content';
 
 type Props = {
   teacher?: Teacher;
   teachers: Teacher[];
+  departments: Department[];
   onClose: () => void;
-  onSave: (input: TeacherInput) => void;
+  onSave: (input: TeacherInput) => Promise<void>;
 };
 
-export function TeacherEditor({ teacher, teachers, onClose, onSave }: Props) {
-  const [input, setInput] = useState({
+export function TeacherEditor({ teacher, teachers, departments, onClose, onSave }: Props) {
+  const [input, setInput] = useState<TeacherInput>({
     employeeId: teacher?.employeeId ?? '',
     name: teacher?.name ?? '',
-    department: teacher?.department ?? '',
-    subjects: String(teacher?.subjects ?? 0),
-    weeklyHours: String(teacher?.weeklyHours ?? 0),
-    status: teacher?.status ?? ('Activo' as TeacherStatus)
+    departmentId: teacher?.departmentId ?? '',
+    status: teacher?.status ?? 'Activo'
   });
   const [error, setError] = useState('');
-  const save = () => {
-    if (!input.employeeId.trim() || !input.name.trim() || !input.department.trim()) {
+  const [pending, setPending] = useState(false);
+  const submitting = useRef(false);
+  const setField = <K extends keyof TeacherInput>(key: K, value: TeacherInput[K]) => {
+    if (!submitting.current) setInput((current) => ({ ...current, [key]: value }));
+  };
+  const close = () => {
+    if (!submitting.current) onClose();
+  };
+  const save = async () => {
+    if (submitting.current) return;
+    if (!input.employeeId.trim() || !input.name.trim() || !input.departmentId) {
       setError('Completa el ID de empleado, el nombre y la carrera o departamento.');
       return;
     }
@@ -43,28 +47,20 @@ export function TeacherEditor({ teacher, teachers, onClose, onSave }: Props) {
       setError('Este ID de empleado ya pertenece a otro docente.');
       return;
     }
-    if (
-      ![input.subjects, input.weeklyHours].every(
-        (value) => /^\d+$/.test(value) && Number.isSafeInteger(Number(value))
-      ) ||
-      Number(input.weeklyHours) > 168
-    ) {
-      setError(
-        'Introduce números enteros no negativos. Las horas semanales no pueden superar 168.'
-      );
-      return;
+    submitting.current = true;
+    setPending(true);
+    setError('');
+    try {
+      await onSave({ ...input, employeeId: input.employeeId.trim(), name: input.name.trim() });
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'No fue posible guardar el docente.');
+    } finally {
+      submitting.current = false;
+      setPending(false);
     }
-    onSave({
-      employeeId: input.employeeId.trim(),
-      name: input.name.trim(),
-      department: input.department.trim(),
-      subjects: Number(input.subjects),
-      weeklyHours: Number(input.weeklyHours),
-      status: input.status
-    });
   };
   return (
-    <Modal transparent animationType="fade" onRequestClose={onClose}>
+    <Modal transparent animationType="fade" onRequestClose={close}>
       <View style={styles.backdrop}>
         <View
           accessibilityViewIsModal
@@ -77,39 +73,46 @@ export function TeacherEditor({ teacher, teachers, onClose, onSave }: Props) {
             <Text accessibilityRole="header" style={styles.title}>
               {teacher ? 'Editar docente' : 'Nuevo docente'}
             </Text>
-            <Text style={styles.subtitle}>
-              Completa los datos del docente y su carga académica.
-            </Text>
+            <Text style={styles.subtitle}>Completa los datos del docente y su departamento.</Text>
             <View style={styles.grid}>
-              {(
-                [
-                  ['employeeId', 'ID Empleado', 'EMP-064'],
-                  ['name', 'Nombre', 'Nombre completo'],
-                  ['department', 'Carrera / Depto', 'Ing. Sistemas'],
-                  ['subjects', 'Materias', '3'],
-                  ['weeklyHours', 'Horas/Semana', '18']
-                ] as const
-              ).map(([key, label, placeholder]) => (
-                <AddClassFormField
-                  key={key}
-                  label={label}
-                  placeholder={placeholder}
-                  value={input[key]}
-                  onChangeText={(value) => setInput((current) => ({ ...current, [key]: value }))}
-                  onSubmit={save}
-                  keyboardType={
-                    key === 'subjects' || key === 'weeklyHours' ? 'number-pad' : 'default'
-                  }
-                />
-              ))}
+              <AddClassFormField
+                label="ID Empleado"
+                placeholder="EMP-064"
+                value={input.employeeId}
+                onChangeText={(value) => setField('employeeId', value)}
+                onSubmit={save}
+              />
+              <AddClassFormField
+                label="Nombre"
+                placeholder="Nombre completo"
+                value={input.name}
+                onChangeText={(value) => setField('name', value)}
+                onSubmit={save}
+              />
+              <SelectField
+                label="Carrera / Depto"
+                value={input.departmentId}
+                placeholder="Selecciona un departamento"
+                onChange={(value) => setField('departmentId', value)}
+                options={departments.map((value) => ({ label: value.name, value: value.id }))}
+                style={styles.status}
+              />
               <SelectField
                 label="Estado laboral"
                 value={input.status}
-                onChange={(status) => setInput((current) => ({ ...current, status }))}
+                onChange={(value) => setField('status', value)}
                 options={teacherStatusOptions}
                 style={styles.status}
               />
             </View>
+            <Text style={styles.subtitle}>
+              Las materias y horas semanales se calculan a partir de las clases asignadas.
+            </Text>
+            {teacher ? (
+              <Text style={styles.subtitle}>
+                {teacher.subjects} materias · {teacher.weeklyHours} horas por semana
+              </Text>
+            ) : null}
             {error ? (
               <Text accessibilityRole="alert" style={styles.error}>
                 {error}
@@ -118,17 +121,29 @@ export function TeacherEditor({ teacher, teachers, onClose, onSave }: Props) {
             <View style={styles.actions}>
               <Pressable
                 accessibilityRole="button"
-                onPress={onClose}
-                style={({ pressed }) => [styles.button, pressed && styles.pressed]}
+                disabled={pending}
+                onPress={close}
+                style={({ pressed }) => [
+                  styles.button,
+                  pending && styles.disabled,
+                  pressed && styles.pressed
+                ]}
               >
                 <Text style={styles.buttonText}>Cancelar</Text>
               </Pressable>
               <Pressable
                 accessibilityRole="button"
+                accessibilityState={{ busy: pending, disabled: pending }}
+                disabled={pending}
                 onPress={save}
-                style={({ pressed }) => [styles.button, styles.primary, pressed && styles.pressed]}
+                style={({ pressed }) => [
+                  styles.button,
+                  styles.primary,
+                  pending && styles.disabled,
+                  pressed && styles.pressed
+                ]}
               >
-                <Text style={styles.primaryText}>Guardar docente</Text>
+                <Text style={styles.primaryText}>{pending ? 'Guardando…' : 'Guardar docente'}</Text>
               </Pressable>
             </View>
           </ScrollView>
@@ -177,5 +192,6 @@ const styles = StyleSheet.create({
   buttonText: { color: colors.textPrimary, fontSize: 13, fontWeight: '500' },
   primary: { backgroundColor: colors.primary, borderColor: colors.primary },
   primaryText: { color: colors.card, fontSize: 13, fontWeight: '500' },
+  disabled: { opacity: 0.5 },
   pressed: { opacity: 0.7 }
 });

@@ -1,6 +1,8 @@
 import type { Server } from 'node:http';
 
 import { createApp } from './app.js';
+import { createAcademicRouter } from './academic/academic-router.js';
+import { createAcademicService } from './academic/academic-service.js';
 import { createAuthModule } from './auth/auth-module.js';
 import { getEnvironment } from './config/env.js';
 import { createDatabaseConnection, type DatabaseConnection } from './database/database.js';
@@ -61,6 +63,7 @@ export async function startServer(): Promise<void> {
     await database.connect();
     const auth = createAuthModule(database.client, environment.nodeEnv);
     const app = createApp({
+      academicRouter: createAcademicRouter(createAcademicService(database.client), auth.service),
       authRouter: auth.router,
       corsOrigins: environment.corsOrigins,
       database

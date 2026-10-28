@@ -11,6 +11,7 @@ type ClassroomDetailViewProps = {
   onBack: () => void;
   onEdit: () => void;
   onToggleAvailability: () => void;
+  pending?: boolean;
 };
 
 type InfoItemProps = {
@@ -31,13 +32,20 @@ export function ClassroomDetailView({
   classroom,
   onBack,
   onEdit,
-  onToggleAvailability
+  onToggleAvailability,
+  pending = false
 }: ClassroomDetailViewProps) {
   const isAvailable = classroom.status === 'available';
 
   return (
     <>
-      <Pressable accessibilityRole="button" focusable onPress={onBack} style={styles.backButton}>
+      <Pressable
+        accessibilityRole="button"
+        focusable
+        disabled={pending}
+        onPress={onBack}
+        style={styles.backButton}
+      >
         <Text style={styles.backText}>← {classroomsCopy.detail.back}</Text>
       </Pressable>
 
@@ -55,6 +63,7 @@ export function ClassroomDetailView({
           <Pressable
             accessibilityRole="button"
             focusable
+            disabled={pending}
             onPress={onEdit}
             style={styles.primaryButton}
           >
@@ -101,6 +110,8 @@ export function ClassroomDetailView({
             </Text>
             <Switch
               accessibilityLabel={classroomsCopy.detail.availability}
+              accessibilityState={{ busy: pending, disabled: pending }}
+              disabled={pending}
               onValueChange={onToggleAvailability}
               trackColor={{ false: '#d3d4d9', true: dashboardColors.primary }}
               value={isAvailable}

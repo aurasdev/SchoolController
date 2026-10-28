@@ -1,9 +1,23 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { dashboardCopy } from '@/features/admin-dashboard/content';
 import { dashboardColors } from '@/features/admin-dashboard/tokens';
 
-export function WeekNavigator() {
+type Props = {
+  label: string;
+  previousDisabled: boolean;
+  nextDisabled: boolean;
+  onPrevious: () => void;
+  onNext: () => void;
+  onToday: () => void;
+};
+export function WeekNavigator({
+  label,
+  previousDisabled,
+  nextDisabled,
+  onPrevious,
+  onNext,
+  onToday
+}: Props) {
   return (
     <View style={styles.navigator}>
       <View style={styles.arrowGroup}>
@@ -11,6 +25,8 @@ export function WeekNavigator() {
           accessibilityLabel="Previous week"
           accessibilityRole="button"
           focusable
+          disabled={previousDisabled}
+          onPress={onPrevious}
           style={styles.arrowButton}
         >
           <Text style={styles.arrowText}>‹</Text>
@@ -19,14 +35,16 @@ export function WeekNavigator() {
           accessibilityLabel="Next week"
           accessibilityRole="button"
           focusable
+          disabled={nextDisabled}
+          onPress={onNext}
           style={styles.arrowButton}
         >
           <Text style={styles.arrowText}>›</Text>
         </Pressable>
       </View>
-      <Text style={styles.rangeText}>{dashboardCopy.weekRange}</Text>
-      <Pressable accessibilityRole="button" focusable style={styles.todayButton}>
-        <Text style={styles.todayButtonText}>{dashboardCopy.today}</Text>
+      <Text style={styles.rangeText}>{label}</Text>
+      <Pressable accessibilityRole="button" focusable onPress={onToday} style={styles.todayButton}>
+        <Text style={styles.todayButtonText}>Hoy</Text>
       </Pressable>
     </View>
   );
@@ -57,7 +75,8 @@ const styles = StyleSheet.create({
   navigator: {
     alignItems: 'center',
     flexDirection: 'row',
-    gap: 16
+    gap: 16,
+    flexWrap: 'wrap'
   },
   rangeText: {
     color: dashboardColors.textPrimary,

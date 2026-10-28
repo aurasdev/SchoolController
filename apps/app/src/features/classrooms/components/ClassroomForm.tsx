@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import type { Classroom, ClassroomInput } from '@school-controller/shared';
 
@@ -17,18 +17,32 @@ type ClassroomFormProps = {
   classroom?: Classroom;
   classrooms: Classroom[];
   onCancel: () => void;
-  onSubmit: (input: ClassroomInput) => void;
+  onSubmit: (input: ClassroomInput) => Promise<void>;
 };
 
 export function ClassroomForm({ classroom, classrooms, onCancel, onSubmit }: ClassroomFormProps) {
   const { errors, handlers, submit, values } = useClassroomForm(classrooms, classroom);
   const isEditing = classroom !== undefined;
+  const [pending, setPending] = useState(false);
+  const [error, setError] = useState('');
+  const submitting = useRef(false);
 
-  const handleSubmit = useCallback(() => {
+  const handleSubmit = useCallback(async () => {
+    if (submitting.current) return;
     const input = submit();
 
     if (input) {
-      onSubmit(input);
+      submitting.current = true;
+      setPending(true);
+      setError('');
+      try {
+        await onSubmit(input);
+      } catch (cause) {
+        setError(cause instanceof Error ? cause.message : 'No fue posible guardar el aula.');
+      } finally {
+        submitting.current = false;
+        setPending(false);
+      }
     }
   }, [onSubmit, submit]);
 
@@ -56,7 +70,14 @@ export function ClassroomForm({ classroom, classrooms, onCancel, onSubmit }: Cla
           error={errors.building}
           label={classroomsCopy.building}
           onChange={handlers.onBuildingChange}
-          options={classroomBuildingOptions}
+          options={Array.from(
+            new Set([
+              ...classroomBuildingOptions.map((item) => item.value),
+              ...classrooms.map((item) => item.building)
+            ])
+          )
+            .sort()
+            .map((value) => ({ label: value, value }))}
           placeholder={classroomsCopy.form.selectBuilding}
           style={styles.select}
           value={values.building}
@@ -93,22 +114,32 @@ export function ClassroomForm({ classroom, classrooms, onCancel, onSubmit }: Cla
         />
       </View>
 
+      {error ? (
+        <Text accessibilityRole="alert" style={styles.error}>
+          {error}
+        </Text>
+      ) : null}
       <View style={styles.actions}>
         <Pressable
           accessibilityRole="button"
           focusable
+          disabled={pending}
           onPress={onCancel}
-          style={styles.secondaryButton}
+          style={[styles.secondaryButton, pending && styles.disabled]}
         >
           <Text style={styles.secondaryButtonText}>{classroomsCopy.form.cancel}</Text>
         </Pressable>
         <Pressable
           accessibilityRole="button"
           focusable
+          disabled={pending}
+          accessibilityState={{ busy: pending, disabled: pending }}
           onPress={handleSubmit}
-          style={styles.primaryButton}
+          style={[styles.primaryButton, pending && styles.disabled]}
         >
-          <Text style={styles.primaryButtonText}>{classroomsCopy.form.save}</Text>
+          <Text style={styles.primaryButtonText}>
+            {pending ? 'Guardando…' : classroomsCopy.form.save}
+          </Text>
         </Pressable>
       </View>
     </View>
@@ -116,6 +147,8 @@ export function ClassroomForm({ classroom, classrooms, onCancel, onSubmit }: Cla
 }
 
 const styles = StyleSheet.create({
+  error: { color: '#b42318', fontSize: 13, marginTop: 16 },
+  disabled: { opacity: 0.5 },
   actions: {
     flexDirection: 'row',
     gap: 10,

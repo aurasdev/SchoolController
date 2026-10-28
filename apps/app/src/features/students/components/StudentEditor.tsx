@@ -1,46 +1,40 @@
-import { useState } from 'react';
+import type { AcademicGroup, Student, StudentInput } from '@school-controller/shared';
+import { useRef, useState } from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { AddClassFormField } from '@/features/admin-dashboard/components/AddClassFormField';
 import { dashboardColors as colors } from '@/features/admin-dashboard/tokens';
 import { SelectField } from '@/features/classrooms/components/SelectField';
-import type { Student } from '@/features/students/content';
 
 type Props = {
   student: Student;
   students: Student[];
+  groups: AcademicGroup[];
   onClose: () => void;
-  onSave: (student: Student) => void;
+  onSave: (input: StudentInput) => Promise<void>;
 };
 
-export function StudentEditor({ student, students, onClose, onSave }: Props) {
-  const [input, setInput] = useState<
-    Omit<Student, 'semester' | 'status'> & {
-      semester: string;
-      status: NonNullable<Student['status']> | '';
-    }
-  >({
-    ...student,
-    semester: String(student.semester),
-    status: student.status ?? ''
+export function StudentEditor({ student, students, groups, onClose, onSave }: Props) {
+  const [input, setInput] = useState<StudentInput>({
+    enrollment: student.enrollment,
+    name: student.name,
+    groupId: student.groupId,
+    status: student.status
   });
   const [error, setError] = useState('');
-  const save = () => {
-    if (
-      !input.enrollment.trim() ||
-      !input.name.trim() ||
-      !input.degree.trim() ||
-      !input.group.trim()
-    ) {
-      setError('Completa la matrícula, el nombre, la carrera y el grupo.');
-      return;
-    }
-    if (
-      !/^\d+$/.test(input.semester) ||
-      Number(input.semester) < 1 ||
-      Number(input.semester) > 12
-    ) {
-      setError('El semestre debe ser un número del 1 al 12.');
+  const [pending, setPending] = useState(false);
+  const submitting = useRef(false);
+  const group = groups.find((value) => value.id === input.groupId);
+  const setField = <K extends keyof StudentInput>(key: K, value: StudentInput[K]) => {
+    if (!submitting.current) setInput((current) => ({ ...current, [key]: value }));
+  };
+  const close = () => {
+    if (!submitting.current) onClose();
+  };
+  const save = async () => {
+    if (submitting.current) return;
+    if (!input.enrollment.trim() || !input.name.trim() || !input.groupId) {
+      setError('Completa la matrícula, el nombre y el grupo.');
       return;
     }
     if (
@@ -53,19 +47,21 @@ export function StudentEditor({ student, students, onClose, onSave }: Props) {
       setError('Esta matrícula ya pertenece a otro alumno.');
       return;
     }
-    onSave({
-      ...student,
-      enrollment: input.enrollment.trim(),
-      name: input.name.trim(),
-      degree: input.degree.trim(),
-      semester: Number(input.semester),
-      group: input.group.trim(),
-      status: input.status || null
-    });
+    submitting.current = true;
+    setPending(true);
+    setError('');
+    try {
+      await onSave({ ...input, enrollment: input.enrollment.trim(), name: input.name.trim() });
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'No fue posible guardar el alumno.');
+    } finally {
+      submitting.current = false;
+      setPending(false);
+    }
   };
 
   return (
-    <Modal transparent animationType="fade" onRequestClose={onClose}>
+    <Modal transparent animationType="fade" onRequestClose={close}>
       <View style={styles.backdrop}>
         <View
           accessibilityViewIsModal
@@ -80,37 +76,47 @@ export function StudentEditor({ student, students, onClose, onSave }: Props) {
             </Text>
             <Text style={styles.subtitle}>Actualiza los datos de {student.name}.</Text>
             <View style={styles.grid}>
-              {(
-                [
-                  ['enrollment', 'Matrícula', 'A2024-001'],
-                  ['name', 'Nombre', 'Nombre completo'],
-                  ['degree', 'Carrera', 'Ing. Sistemas'],
-                  ['semester', 'Semestre', '4'],
-                  ['group', 'Grupo', 'ISC-4A']
-                ] as const
-              ).map(([key, label, placeholder]) => (
-                <AddClassFormField
-                  key={key}
-                  label={label}
-                  placeholder={placeholder}
-                  value={input[key]}
-                  keyboardType={key === 'semester' ? 'number-pad' : 'default'}
-                  onChangeText={(value) => setInput((current) => ({ ...current, [key]: value }))}
-                  onSubmit={save}
-                />
-              ))}
+              <AddClassFormField
+                label="Matrícula"
+                placeholder="A2024-001"
+                value={input.enrollment}
+                onChangeText={(value) => setField('enrollment', value)}
+                onSubmit={save}
+              />
+              <AddClassFormField
+                label="Nombre"
+                placeholder="Nombre completo"
+                value={input.name}
+                onChangeText={(value) => setField('name', value)}
+                onSubmit={save}
+              />
+              <SelectField
+                label="Grupo"
+                value={input.groupId}
+                placeholder="Selecciona un grupo"
+                onChange={(value) => setField('groupId', value)}
+                options={groups.map((value) => ({
+                  label: `${value.code} · ${value.degree}`,
+                  value: value.id
+                }))}
+                style={styles.status}
+              />
               <SelectField
                 label="Estado"
                 value={input.status}
-                onChange={(status) => setInput((current) => ({ ...current, status }))}
+                onChange={(value) => setField('status', value)}
                 options={[
-                  { label: 'Sin definir', value: '' },
                   { label: 'Activo', value: 'Activo' },
                   { label: 'Inactivo', value: 'Inactivo' }
                 ]}
                 style={styles.status}
               />
             </View>
+            {group ? (
+              <Text style={styles.subtitle}>
+                {group.degree} · Semestre {group.semester} · Grupo {group.code}
+              </Text>
+            ) : null}
             {error ? (
               <Text accessibilityRole="alert" style={styles.error}>
                 {error}
@@ -119,17 +125,29 @@ export function StudentEditor({ student, students, onClose, onSave }: Props) {
             <View style={styles.actions}>
               <Pressable
                 accessibilityRole="button"
-                onPress={onClose}
-                style={({ pressed }) => [styles.button, pressed && styles.pressed]}
+                disabled={pending}
+                onPress={close}
+                style={({ pressed }) => [
+                  styles.button,
+                  pending && styles.disabled,
+                  pressed && styles.pressed
+                ]}
               >
                 <Text style={styles.buttonText}>Cancelar</Text>
               </Pressable>
               <Pressable
                 accessibilityRole="button"
+                accessibilityState={{ disabled: pending, busy: pending }}
+                disabled={pending}
                 onPress={save}
-                style={({ pressed }) => [styles.button, styles.primary, pressed && styles.pressed]}
+                style={({ pressed }) => [
+                  styles.button,
+                  styles.primary,
+                  pending && styles.disabled,
+                  pressed && styles.pressed
+                ]}
               >
-                <Text style={styles.primaryText}>Guardar cambios</Text>
+                <Text style={styles.primaryText}>{pending ? 'Guardando…' : 'Guardar cambios'}</Text>
               </Pressable>
             </View>
           </ScrollView>
@@ -178,5 +196,6 @@ const styles = StyleSheet.create({
   buttonText: { color: colors.textPrimary, fontSize: 13, fontWeight: '500' },
   primary: { backgroundColor: colors.primary, borderColor: colors.primary },
   primaryText: { color: colors.card, fontSize: 13, fontWeight: '500' },
+  disabled: { opacity: 0.5 },
   pressed: { opacity: 0.7 }
 });

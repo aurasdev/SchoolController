@@ -1,5 +1,13 @@
-import { useCallback, useState } from 'react';
-import { Pressable, type StyleProp, StyleSheet, Text, View, type ViewStyle } from 'react-native';
+import { useCallback, useEffect, useState } from 'react';
+import {
+  Pressable,
+  ScrollView,
+  type StyleProp,
+  StyleSheet,
+  Text,
+  View,
+  type ViewStyle
+} from 'react-native';
 
 import { dashboardColors } from '@/features/admin-dashboard/tokens';
 import { classroomColors } from '@/features/classrooms/tokens';
@@ -55,6 +63,15 @@ export function SelectField<T extends string>({
   const [isOpen, setIsOpen] = useState(false);
   const selected = options.find((option) => option.value === value);
 
+  useEffect(() => {
+    if (!isOpen || typeof document === 'undefined') return;
+    const dismiss = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setIsOpen(false);
+    };
+    document.addEventListener('keydown', dismiss);
+    return () => document.removeEventListener('keydown', dismiss);
+  }, [isOpen]);
+
   const handleToggle = useCallback(() => {
     setIsOpen((current) => !current);
   }, []);
@@ -91,14 +108,20 @@ export function SelectField<T extends string>({
       </Pressable>
       {isOpen ? (
         <View accessibilityRole="menu" style={styles.menu}>
-          {options.map((option) => (
-            <SelectOptionItem
-              isSelected={option.value === value}
-              key={option.value}
-              onSelect={handleSelect}
-              option={option}
-            />
-          ))}
+          <ScrollView
+            keyboardShouldPersistTaps="handled"
+            nestedScrollEnabled
+            style={styles.menuScroll}
+          >
+            {options.map((option) => (
+              <SelectOptionItem
+                isSelected={option.value === value}
+                key={option.value}
+                onSelect={handleSelect}
+                option={option}
+              />
+            ))}
+          </ScrollView>
         </View>
       ) : null}
       {error ? (
@@ -154,6 +177,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 11
   },
+  menuScroll: { maxHeight: 240 },
   menuText: {
     color: dashboardColors.textPrimary,
     fontSize: 14,

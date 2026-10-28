@@ -1,5 +1,6 @@
 import type { ClassroomInput } from '@school-controller/shared';
-import { useCallback, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
+import { StyleSheet, Text, View } from 'react-native';
 
 import { ClassroomDetailView } from '@/features/classrooms/components/ClassroomDetailView';
 import { ClassroomForm } from '@/features/classrooms/components/ClassroomForm';
@@ -17,6 +18,9 @@ export function ClassroomsView({ store }: ClassroomsViewProps) {
   const [route, setRoute] = useState<ClassroomsRoute>({ name: 'list' });
   const [filters, setFilters] = useState<ClassroomFilters>(emptyClassroomFilters);
   const [page, setPage] = useState(1);
+  const [pending, setPending] = useState(false);
+  const [error, setError] = useState('');
+  const toggling = useRef(false);
 
   const handleFiltersChange = useCallback((next: ClassroomFilters) => {
     setFilters(next);
@@ -40,8 +44,8 @@ export function ClassroomsView({ store }: ClassroomsViewProps) {
   }, []);
 
   const handleCreateSubmit = useCallback(
-    (input: ClassroomInput) => {
-      const id = create(input);
+    async (input: ClassroomInput) => {
+      const id = await create(input);
 
       setRoute({ id, name: 'detail' });
     },
@@ -49,12 +53,12 @@ export function ClassroomsView({ store }: ClassroomsViewProps) {
   );
 
   const handleEditSubmit = useCallback(
-    (input: ClassroomInput) => {
+    async (input: ClassroomInput) => {
       if (route.name !== 'edit') {
         return;
       }
 
-      update(route.id, input);
+      await update(route.id, input);
       setRoute({ id: route.id, name: 'detail' });
     },
     [route, update]
@@ -70,9 +74,20 @@ export function ClassroomsView({ store }: ClassroomsViewProps) {
     setRoute((current) => (current.name === 'detail' ? { id: current.id, name: 'edit' } : current));
   }, []);
 
-  const handleToggleSelected = useCallback(() => {
-    if (route.name === 'detail') {
-      toggleAvailability(route.id);
+  const handleToggleSelected = useCallback(async () => {
+    if (route.name !== 'detail' || toggling.current) return;
+    toggling.current = true;
+    setPending(true);
+    setError('');
+    try {
+      await toggleAvailability(route.id);
+    } catch (cause) {
+      setError(
+        cause instanceof Error ? cause.message : 'No fue posible actualizar la disponibilidad.'
+      );
+    } finally {
+      toggling.current = false;
+      setPending(false);
     }
   }, [route, toggleAvailability]);
 
@@ -103,12 +118,25 @@ export function ClassroomsView({ store }: ClassroomsViewProps) {
 
     if (classroom) {
       return (
-        <ClassroomDetailView
-          classroom={classroom}
-          onBack={handleBackToList}
-          onEdit={handleEditSelected}
-          onToggleAvailability={handleToggleSelected}
-        />
+        <View>
+          {error ? (
+            <Text accessibilityRole="alert" style={styles.error}>
+              {error}
+            </Text>
+          ) : null}
+          {pending ? (
+            <Text accessibilityLiveRegion="polite" style={styles.pending}>
+              Guardando disponibilidad…
+            </Text>
+          ) : null}
+          <ClassroomDetailView
+            classroom={classroom}
+            onBack={handleBackToList}
+            onEdit={handleEditSelected}
+            onToggleAvailability={handleToggleSelected}
+            pending={pending}
+          />
+        </View>
       );
     }
   }
@@ -126,3 +154,8 @@ export function ClassroomsView({ store }: ClassroomsViewProps) {
     />
   );
 }
+
+const styles = StyleSheet.create({
+  error: { color: '#b42318', fontSize: 13, marginBottom: 16 },
+  pending: { color: '#666673', fontSize: 13, marginBottom: 16 }
+});

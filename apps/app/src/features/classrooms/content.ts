@@ -1,4 +1,4 @@
-import type { Classroom, ClassroomStatus, ClassroomType } from '@school-controller/shared';
+import type { ClassroomStatus, ClassroomType } from '@school-controller/shared';
 
 import type { SelectOption } from '@/features/classrooms/types';
 
@@ -90,13 +90,13 @@ export const classroomStatusLabels: Record<ClassroomStatus, string> = {
   occupied: 'Ocupada'
 };
 
-// ponytail: fixed list for the mock, buildings become their own entity once the API exists.
 export const classroomBuildings = [
   'Edificio A',
   'Edificio B',
   'Edificio C',
   'Edificio D',
-  'Laboratorio'
+  'Edificio E',
+  'Edificio F'
 ];
 
 export const classroomTypeOptions: SelectOption<ClassroomType>[] = classroomTypes.map((value) => ({
@@ -113,11 +113,6 @@ export const classroomBuildingOptions: SelectOption<string>[] = classroomBuildin
   value
 }));
 
-export const buildingFilterOptions: SelectOption<string>[] = [
-  { label: classroomsCopy.allBuildings, value: '' },
-  ...classroomBuildingOptions
-];
-
 export const typeFilterOptions: SelectOption<ClassroomType | ''>[] = [
   { label: classroomsCopy.allTypes, value: '' },
   ...classroomTypeOptions
@@ -126,67 +121,4 @@ export const typeFilterOptions: SelectOption<ClassroomType | ''>[] = [
 export const statusFilterOptions: SelectOption<ClassroomStatus | ''>[] = [
   { label: classroomsCopy.allStatuses, value: '' },
   ...classroomStatusOptions
-];
-
-function room(
-  code: string,
-  building: string,
-  type: ClassroomType,
-  capacity: number,
-  equipment: string[],
-  weeklyOccupancy: number,
-  status: ClassroomStatus = 'available'
-): Classroom {
-  return {
-    building,
-    capacity,
-    code,
-    equipment,
-    id: `room-${code.toLowerCase()}`,
-    status,
-    type,
-    weeklyOccupancy
-  };
-}
-
-export const initialClassrooms: Classroom[] = [
-  room('A-201', 'Edificio A', 'standard', 40, ['Proyector', 'Pizarrón'], 85),
-  room('B-105', 'Edificio B', 'workshop', 30, ['Mesas de dibujo'], 70),
-  room('C-302', 'Edificio C', 'standard', 35, ['Proyector'], 90),
-  room('Lab-3', 'Laboratorio', 'laboratory', 25, ['Computadoras', 'Proyector'], 95, 'occupied'),
-  room('D-401', 'Edificio D', 'auditorium', 120, ['Audio', 'Proyector', 'Streaming'], 40),
-  room('A-305', 'Edificio A', 'standard', 35, ['Proyector', 'Pizarrón'], 60, 'maintenance'),
-  room('A-101', 'Edificio A', 'standard', 45, ['Proyector', 'Pizarrón'], 55),
-  room('A-102', 'Edificio A', 'standard', 40, ['Proyector'], 62),
-  room('A-202', 'Edificio A', 'standard', 38, ['Proyector', 'Pizarrón'], 78),
-  room('A-301', 'Edificio A', 'standard', 42, ['Proyector'], 48),
-  room('B-101', 'Edificio B', 'standard', 36, ['Pizarrón'], 66),
-  room('B-102', 'Edificio B', 'standard', 30, ['Proyector'], 52),
-  room('B-106', 'Edificio B', 'workshop', 28, ['Mesas de dibujo', 'Proyector'], 58),
-  room('B-201', 'Edificio B', 'standard', 40, ['Proyector', 'Pizarrón'], 73),
-  room('B-202', 'Edificio B', 'standard', 34, ['Proyector'], 81, 'occupied'),
-  room('C-101', 'Edificio C', 'standard', 32, ['Pizarrón'], 44),
-  room('C-201', 'Edificio C', 'standard', 36, ['Proyector', 'Pizarrón'], 69),
-  room('C-301', 'Edificio C', 'standard', 40, ['Proyector'], 57),
-  room(
-    'C-303',
-    'Edificio C',
-    'workshop',
-    24,
-    ['Herramientas', 'Mesas de trabajo'],
-    35,
-    'maintenance'
-  ),
-  room('D-101', 'Edificio D', 'standard', 50, ['Proyector', 'Audio'], 63),
-  room('D-201', 'Edificio D', 'standard', 45, ['Proyector'], 71),
-  room('Lab-1', 'Laboratorio', 'laboratory', 28, ['Computadoras', 'Proyector'], 88),
-  room(
-    'Lab-2',
-    'Laboratorio',
-    'laboratory',
-    24,
-    ['Equipo de química', 'Campana de extracción'],
-    76
-  ),
-  room('Lab-4', 'Laboratorio', 'laboratory', 20, ['Equipo de física'], 42, 'maintenance')
 ];

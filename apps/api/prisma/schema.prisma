@@ -74,26 +74,34 @@ model Student {
 }
 
 model Teacher {
-  id             String               @id @default(uuid()) @db.Uuid
-  userId         String               @unique @map("user_id") @db.Uuid
-  employeeNumber String               @unique @map("employee_number") @db.VarChar(50)
-  user           User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
-  assignments    ScheduleAssignment[]
-  createdAt      DateTime             @default(now()) @map("created_at")
-  updatedAt      DateTime             @updatedAt @map("updated_at")
+  id               String               @id @default(uuid()) @db.Uuid
+  userId           String               @unique @map("user_id") @db.Uuid
+  employeeNumber   String               @unique @map("employee_number") @db.VarChar(50)
+  departmentId     String               @map("department_id") @db.Uuid
+  displayName      String               @default("") @map("display_name") @db.VarChar(200)
+  employmentStatus String               @default("Activo") @map("employment_status") @db.VarChar(20)
+  department       Department           @relation(fields: [departmentId], references: [id], onDelete: Restrict)
+  user             User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  assignments      ScheduleAssignment[]
+  createdAt        DateTime             @default(now()) @map("created_at")
+  updatedAt        DateTime             @updatedAt @map("updated_at")
 
+  @@index([departmentId])
   @@map("teachers")
 }
 
 model Subject {
-  id          String               @id @default(uuid()) @db.Uuid
-  code        String               @unique @db.VarChar(30)
-  name        String               @db.VarChar(150)
-  description String?              @db.Text
-  assignments ScheduleAssignment[]
-  createdAt   DateTime             @default(now()) @map("created_at")
-  updatedAt   DateTime             @updatedAt @map("updated_at")
+  id           String               @id @default(uuid()) @db.Uuid
+  code         String               @unique @db.VarChar(30)
+  name         String               @db.VarChar(150)
+  description  String?              @db.Text
+  departmentId String?              @map("department_id") @db.Uuid
+  department   Department?          @relation(fields: [departmentId], references: [id], onDelete: Restrict)
+  assignments  ScheduleAssignment[]
+  createdAt    DateTime             @default(now()) @map("created_at")
+  updatedAt    DateTime             @updatedAt @map("updated_at")
 
+  @@index([departmentId])
   @@map("subjects")
 }
 
@@ -102,6 +110,9 @@ model Group {
   academicPeriodId String               @map("academic_period_id") @db.Uuid
   code             String               @db.VarChar(30)
   name             String               @db.VarChar(100)
+  departmentId     String               @map("department_id") @db.Uuid
+  semester         Int                  @default(1)
+  department       Department           @relation(fields: [departmentId], references: [id], onDelete: Restrict)
   academicPeriod   AcademicPeriod       @relation(fields: [academicPeriodId], references: [id], onDelete: Restrict)
   students         Student[]
   assignments      ScheduleAssignment[]
@@ -111,6 +122,7 @@ model Group {
   @@unique([id, academicPeriodId])
   @@unique([code, academicPeriodId])
   @@index([academicPeriodId])
+  @@index([departmentId])
   @@map("academic_groups")
 }
 
@@ -120,6 +132,10 @@ model Classroom {
   name        String               @db.VarChar(100)
   capacity    Int?
   location    String?              @db.VarChar(150)
+  building    String               @default("Edificio A") @db.VarChar(100)
+  type        String               @default("standard") @db.VarChar(30)
+  equipment   String[]             @default([])
+  status      String               @default("available") @db.VarChar(30)
   assignments ScheduleAssignment[]
   createdAt   DateTime             @default(now()) @map("created_at")
   updatedAt   DateTime             @updatedAt @map("updated_at")
@@ -168,6 +184,7 @@ model ScheduleAssignment {
   dayOfWeek        DayOfWeek      @map("day_of_week")
   startTime        DateTime       @map("start_time") @db.Time(0)
   endTime          DateTime       @map("end_time") @db.Time(0)
+  status           String         @default("Active") @db.VarChar(20)
   schedule         Schedule       @relation(fields: [scheduleId, academicPeriodId], references: [id, academicPeriodId], onDelete: Cascade)
   academicPeriod   AcademicPeriod @relation(fields: [academicPeriodId], references: [id], onDelete: Restrict)
   subject          Subject        @relation(fields: [subjectId], references: [id], onDelete: Restrict)
@@ -183,4 +200,24 @@ model ScheduleAssignment {
   @@index([groupId, academicPeriodId, dayOfWeek])
   @@index([classroomId, academicPeriodId, dayOfWeek])
   @@map("schedule_assignments")
+}
+
+model Department {
+  id       String    @id @default(uuid()) @db.Uuid
+  code     String    @unique @db.VarChar(30)
+  name     String    @unique @db.VarChar(100)
+  teachers Teacher[]
+  subjects Subject[]
+  groups   Group[]
+
+  @@map("departments")
+}
+
+model AcademicActivity {
+  id        String   @id @default(uuid()) @db.Uuid
+  title     String   @db.VarChar(255)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([createdAt])
+  @@map("academic_activities")
 }

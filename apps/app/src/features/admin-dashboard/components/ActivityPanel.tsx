@@ -1,6 +1,6 @@
 import { StyleSheet, Text, View } from 'react-native';
 
-import { activityItems, dashboardCopy } from '@/features/admin-dashboard/content';
+import { dashboardCopy } from '@/features/admin-dashboard/content';
 import { dashboardColors } from '@/features/admin-dashboard/tokens';
 import type { ActivityItem } from '@/features/admin-dashboard/types';
 
@@ -20,12 +20,15 @@ function ActivityRow({ item }: ActivityRowProps) {
   );
 }
 
-export function ActivityPanel() {
+export function ActivityPanel({ items }: { items: ActivityItem[] }) {
   return (
     <View style={styles.card}>
       <Text style={styles.title}>{dashboardCopy.sectionActivity}</Text>
       <View style={styles.list}>
-        {activityItems.map((item) => (
+        {items.length === 0 ? (
+          <Text style={styles.empty}>No hay movimientos recientes.</Text>
+        ) : null}
+        {items.map((item) => (
           <ActivityRow item={item} key={item.id} />
         ))}
       </View>
@@ -34,6 +37,7 @@ export function ActivityPanel() {
 }
 
 const styles = StyleSheet.create({
+  empty: { color: dashboardColors.textSecondary, fontSize: 14 },
   activityCopy: {
     flex: 1
   },

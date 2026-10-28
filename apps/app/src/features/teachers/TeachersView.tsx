@@ -1,3 +1,4 @@
+import type { Department } from '@school-controller/shared';
 import { useState } from 'react';
 import { Pressable, StyleSheet, Switch, Text, View } from 'react-native';
 
@@ -12,10 +13,14 @@ import {
   teacherStatusOptions
 } from '@/features/teachers/content';
 
-type Props = { teachers: Teacher[]; onChange: (teachers: Teacher[]) => void };
+type Props = {
+  teachers: Teacher[];
+  departments: Department[];
+  onSave: (input: TeacherInput, id?: string) => Promise<void>;
+};
 const pageSize = 6;
 
-export function TeachersView({ teachers, onChange }: Props) {
+export function TeachersView({ teachers, departments, onSave }: Props) {
   const [department, setDepartment] = useState('');
   const [status, setStatus] = useState<TeacherStatus | ''>('');
   const [activeOnly, setActiveOnly] = useState(false);
@@ -24,7 +29,7 @@ export function TeachersView({ teachers, onChange }: Props) {
   const [feedback, setFeedback] = useState('');
   const filtered = teachers.filter(
     (teacher) =>
-      (!department || teacher.department === department) &&
+      (!department || teacher.departmentId === department) &&
       (!status || teacher.status === status) &&
       (!activeOnly || teacher.status === 'Activo')
   );
@@ -37,13 +42,11 @@ export function TeachersView({ teachers, onChange }: Props) {
     setActiveOnly(false);
     setPage(1);
   };
-  const save = (input: TeacherInput) => {
+  const save = async (input: TeacherInput) => {
+    await onSave(input, editor?.teacher?.id);
     if (editor?.teacher) {
-      const id = editor.teacher.id;
-      onChange(teachers.map((teacher) => (teacher.id === id ? { ...teacher, ...input } : teacher)));
       setFeedback('Los datos del docente se actualizaron.');
     } else {
-      onChange([{ ...input, id: `teacher-${Date.now()}` }, ...teachers]);
       resetFilters();
       setFeedback('Docente registrado.');
     }
@@ -77,9 +80,7 @@ export function TeachersView({ teachers, onChange }: Props) {
           }}
           options={[
             { label: 'Todas las carreras', value: '' },
-            ...Array.from(new Set(teachers.map((teacher) => teacher.department)))
-              .sort()
-              .map((value) => ({ label: value, value }))
+            ...departments.map((item) => ({ label: item.name, value: item.id }))
           ]}
           style={styles.select}
         />
@@ -158,6 +159,7 @@ export function TeachersView({ teachers, onChange }: Props) {
         <TeacherEditor
           teacher={editor.teacher}
           teachers={teachers}
+          departments={departments}
           onClose={() => setEditor(undefined)}
           onSave={save}
         />

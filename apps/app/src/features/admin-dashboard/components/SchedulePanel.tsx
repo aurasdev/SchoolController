@@ -1,6 +1,6 @@
 import { StyleSheet, Text, View } from 'react-native';
 
-import { dashboardCopy, scheduleItems } from '@/features/admin-dashboard/content';
+import { dashboardCopy } from '@/features/admin-dashboard/content';
 import { dashboardColors } from '@/features/admin-dashboard/tokens';
 import type { ScheduleItem } from '@/features/admin-dashboard/types';
 
@@ -21,12 +21,15 @@ function ScheduleRow({ item }: ScheduleRowProps) {
   );
 }
 
-export function SchedulePanel() {
+export function SchedulePanel({ items }: { items: ScheduleItem[] }) {
   return (
     <View style={styles.card}>
       <Text style={styles.title}>{dashboardCopy.sectionSchedule}</Text>
       <View style={styles.list}>
-        {scheduleItems.map((item) => (
+        {items.length === 0 ? (
+          <Text style={styles.empty}>No hay clases programadas para hoy.</Text>
+        ) : null}
+        {items.map((item) => (
           <ScheduleRow item={item} key={item.id} />
         ))}
       </View>
@@ -35,6 +38,7 @@ export function SchedulePanel() {
 }
 
 const styles = StyleSheet.create({
+  empty: { color: dashboardColors.textSecondary, fontSize: 14 },
   card: {
     backgroundColor: dashboardColors.card,
     borderColor: dashboardColors.border,
