@@ -11,20 +11,20 @@ export function CsvFilePicker({ onRead, onError }: CsvFilePickerProps) {
     event.currentTarget.value = '';
     if (!file) return;
     if (file.size > 1_000_000) {
-      onError('Choose a CSV file smaller than 1 MB.');
+      onError('Elige un archivo CSV de menos de 1 MB.');
       return;
     }
     try {
       onRead(await file.text());
     } catch {
-      onError('The file could not be read. Please choose it again.');
+      onError('No se pudo leer el archivo. Elígelo de nuevo.');
     }
   }
 
   return (
     <input
       accept=".csv,text/csv"
-      aria-label="Choose CSV file"
+      aria-label="Elegir archivo CSV"
       onChange={(event) => void handleChange(event)}
       style={{ color: '#686874', fontFamily: 'inherit', fontSize: 14, maxWidth: '100%' }}
       type="file"
