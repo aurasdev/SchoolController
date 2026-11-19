@@ -1,4 +1,4 @@
-import { departments, teachers } from './content';
+import { departments, teachers } from './mockContent';
 import type { ClassInput, ClassValidationErrors } from './types';
 
 const csvHeaders = ['name', 'department', 'teacher', 'schedule', 'students', 'status'] as const;

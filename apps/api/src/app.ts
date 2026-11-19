@@ -9,13 +9,20 @@ import { notFoundHandler } from './middleware/not-found.js';
 import { createHealthRouter } from './routes/health.js';
 
 type AppOptions = {
+  academicRouter?: Router;
   authRouter?: Router;
   corsOrigins?: string[];
   database: Pick<DatabaseConnection, 'checkConnection'>;
   logger?: Pick<Console, 'error'>;
 };
 
-export function createApp({ authRouter, corsOrigins, database, logger }: AppOptions): Express {
+export function createApp({
+  academicRouter,
+  authRouter,
+  corsOrigins,
+  database,
+  logger
+}: AppOptions): Express {
   const app = express();
 
   app.disable('x-powered-by');
@@ -31,6 +38,9 @@ export function createApp({ authRouter, corsOrigins, database, logger }: AppOpti
   app.use('/health', createHealthRouter(database));
   if (authRouter) {
     app.use('/auth', authRouter);
+  }
+  if (academicRouter) {
+    app.use('/academic', academicRouter);
   }
   app.use(notFoundHandler);
   app.use(createErrorHandler(logger));

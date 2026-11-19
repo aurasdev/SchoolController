@@ -1,6 +1,6 @@
 import { StyleSheet, Text, View } from 'react-native';
 
-import { dashboardCopy, upcomingClasses } from '@/features/admin-dashboard/content';
+import { dashboardCopy } from '@/features/admin-dashboard/content';
 import { dashboardColors } from '@/features/admin-dashboard/tokens';
 import type { UpcomingClass } from '@/features/admin-dashboard/types';
 
@@ -25,7 +25,7 @@ function ClassRow({ item }: ClassRowProps) {
   );
 }
 
-export function UpcomingClassesTable() {
+export function UpcomingClassesTable({ items }: { items: UpcomingClass[] }) {
   return (
     <View style={styles.card}>
       <Text style={styles.title}>{dashboardCopy.sectionUpcoming}</Text>
@@ -36,7 +36,10 @@ export function UpcomingClassesTable() {
           <Text style={styles.headerCell}>{dashboardCopy.tableHeaders.time}</Text>
           <Text style={styles.headerCell}>{dashboardCopy.tableHeaders.status}</Text>
         </View>
-        {upcomingClasses.map((item) => (
+        {items.length === 0 ? (
+          <Text style={styles.cell}>No hay próximas clases en el periodo activo.</Text>
+        ) : null}
+        {items.map((item) => (
           <ClassRow item={item} key={item.id} />
         ))}
       </View>

@@ -159,6 +159,45 @@ role-based access control.
 
 ## Development
 
+### Academic directory and schedules
+
+The administrator views read their data from PostgreSQL through the authenticated
+`GET /academic` endpoint. Classes, classrooms, students, teachers, dashboard totals and the
+calendar share the same records. Saving a form reloads the directory so related views stay
+consistent. Calendar dates use the `America/Mexico_City` time zone.
+
+Apply migrations and populate the academic catalog from the repository root:
+
+```bash
+npm run db:generate
+npm exec --workspace @school-controller/api -- prisma migrate deploy
+npm run db:seed
+```
+
+The academic catalog includes six careers, 24 groups, 600 students, 38 teachers, 60 subjects,
+24 classrooms and 240 weekly sessions for August–December 2026. Seeding is repeatable, preserves
+existing records and administrator credentials, and validates relationships, capacities and
+schedule overlaps. To populate only the academic catalog without provisioning an administrator:
+
+```bash
+npm exec --workspace @school-controller/api -- tsx prisma/academic-seed.ts
+```
+
+Academic endpoints require an administrator session:
+
+- `GET /academic`: directory, periods, schedules, sessions and recent activity.
+- `POST /academic/teachers`, `PATCH /academic/teachers/:id`.
+- `POST /academic/students`, `PATCH /academic/students/:id`.
+- `POST /academic/classrooms`, `PATCH /academic/classrooms/:id`.
+- `POST /academic/classes`, `PATCH /academic/classes/:id`.
+- `POST /academic/classes/import`: atomic import of `{ items: ClassInput[] }`.
+
+A class is a weekly session connecting a subject, teacher, group, classroom and schedule.
+Enrollment, teacher workloads and classroom occupancy are derived from these relationships.
+The server rejects conflicting sessions, insufficient capacity, unavailable classrooms and
+assignments to teachers on leave or inactive. Move scheduled classes before disabling their
+teacher or classroom. Students inherit their career and semester from their assigned group.
+
 Run the Expo app and API together from the repository root:
 
 ```bash

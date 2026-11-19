@@ -1,11 +1,11 @@
 import { StyleSheet, Text, View } from 'react-native';
 
-import { dashboardStats } from '@/features/admin-dashboard/content';
 import { dashboardColors } from '@/features/admin-dashboard/tokens';
 import type { DashboardStat } from '@/features/admin-dashboard/types';
 
 type StatGridProps = {
   isCompact: boolean;
+  stats: DashboardStat[];
 };
 
 type StatCardProps = {
@@ -25,10 +25,10 @@ function StatCard({ stat }: StatCardProps) {
   );
 }
 
-export function StatGrid({ isCompact }: StatGridProps) {
+export function StatGrid({ isCompact, stats }: StatGridProps) {
   return (
     <View style={[styles.grid, isCompact && styles.compactGrid]}>
-      {dashboardStats.map((stat) => (
+      {stats.map((stat) => (
         <View key={stat.id} style={isCompact ? styles.compactColumn : styles.column}>
           <StatCard stat={stat} />
         </View>

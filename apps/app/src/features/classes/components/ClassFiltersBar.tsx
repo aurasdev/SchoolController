@@ -1,7 +1,7 @@
 import { StyleSheet, Switch, Text, TextInput, View } from 'react-native';
 
 import { SelectField } from '@/features/classrooms/components/SelectField';
-import { departments, teachers } from '@/features/classes/content';
+import { departments, teachers } from '@/features/classes/mockContent';
 import { classColors } from '@/features/classes/tokens';
 import type { ClassFilters } from '@/features/classes/types';
 

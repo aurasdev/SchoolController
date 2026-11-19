@@ -1,4 +1,4 @@
-import { teachers } from './content';
+import { teachers } from './mockContent';
 import type { AcademicClass, ClassFilters } from './types';
 
 export const CLASSES_PAGE_SIZE = 8;

@@ -1,7 +1,7 @@
 import { useCallback, useReducer } from 'react';
 
 import { validateClassInput } from './classCsv';
-import { initialClasses } from './content';
+import { initialClasses } from './mockContent';
 import type { AcademicClass, ClassInput } from './types';
 
 type ClassesAction =

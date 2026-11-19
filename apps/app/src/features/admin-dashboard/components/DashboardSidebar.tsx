@@ -11,13 +11,15 @@ type DashboardSidebarProps = {
   onNavigate: (section: DashboardSection) => void;
   onSignOut: () => void;
   variant?: 'dark' | 'light';
+  periodName?: string;
 };
 
 export function DashboardSidebar({
   activeSection,
   onNavigate,
   onSignOut,
-  variant = 'dark'
+  variant = 'dark',
+  periodName
 }: DashboardSidebarProps) {
   const isLight = variant === 'light';
 
@@ -51,7 +53,7 @@ export function DashboardSidebar({
             <Text style={styles.portalTitle}>{dashboardCopy.portalTitle}</Text>
             <Text style={styles.portalDescription}>{dashboardCopy.portalDescription}</Text>
             <View style={styles.portalBadge}>
-              <Text style={styles.portalBadgeText}>{dashboardCopy.portalBadge}</Text>
+              <Text style={styles.portalBadgeText}>{periodName ?? 'Periodo académico'}</Text>
             </View>
           </View>
         )}

@@ -4,7 +4,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { AddClassFormField } from '@/features/admin-dashboard/components/AddClassFormField';
 import { dashboardColors } from '@/features/admin-dashboard/tokens';
 import { validateClassInput } from '@/features/classes/classCsv';
-import { departments, teachers } from '@/features/classes/content';
+import { departments, teachers } from '@/features/classes/mockContent';
 import type { AcademicClass, ClassInput } from '@/features/classes/types';
 import { SelectField } from '@/features/classrooms/components/SelectField';
 import type { SelectOption } from '@/features/classrooms/types';

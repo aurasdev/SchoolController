@@ -2,6 +2,7 @@ import { USER_ROLES } from '../src/auth/auth-types.js';
 import { passwordHasher } from '../src/auth/password-hasher.js';
 import { getEnvironment } from '../src/config/env.js';
 import { createDatabaseConnection } from '../src/database/database.js';
+import { seedAcademicData } from './academic-seed.js';
 
 function getSeedCredentials() {
   const email = process.env.SEED_ADMIN_EMAIL?.trim().toLowerCase() ?? 'admin@school.edu';
@@ -41,15 +42,12 @@ async function main() {
         passwordHash,
         roleId: adminRole.id
       },
-      update: {
-        isActive: true,
-        passwordHash,
-        roleId: adminRole.id
-      },
+      update: {},
       where: { email: credentials.email }
     });
 
     console.log(`Seeded roles and administrator ${admin.email}.`);
+    console.log(JSON.stringify(await seedAcademicData(database.client), null, 2));
   } finally {
     await database.disconnect();
   }

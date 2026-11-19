@@ -48,7 +48,7 @@ function toAuthenticatedUser(user: ApiUser): AuthenticatedUser {
   };
 }
 
-function getAuthorizationHeader(): Record<string, string> {
+export function getAuthorizationHeader(): Record<string, string> {
   return inMemoryAccessToken ? { Authorization: `Bearer ${inMemoryAccessToken}` } : {};
 }
 

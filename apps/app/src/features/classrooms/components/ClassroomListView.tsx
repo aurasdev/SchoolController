@@ -121,7 +121,11 @@ export function ClassroomListView({
         </Pressable>
       </View>
 
-      <ClassroomFiltersBar filters={filters} onChange={onFiltersChange} />
+      <ClassroomFiltersBar
+        buildings={Array.from(new Set(classrooms.map((item) => item.building))).sort()}
+        filters={filters}
+        onChange={onFiltersChange}
+      />
 
       <Text style={styles.count}>
         {classroomsCopy.showing} <Text style={styles.strong}>{filtered.length}</Text>{' '}

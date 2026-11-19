@@ -12,7 +12,7 @@ import {
   getClassPageNumbers,
   paginateClasses
 } from '../src/features/classes/classFilters';
-import { initialClasses } from '../src/features/classes/content';
+import { initialClasses } from '../src/features/classes/mockContent';
 
 test('class filters combine teacher, department, status and a trimmed case-insensitive search', () => {
   assert.equal(initialClasses.length, 8);

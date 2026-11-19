@@ -66,7 +66,7 @@ export function validateClassroomForm(
     errors.building = classroomsCopy.form.errors.buildingRequired;
   }
 
-  if (!/^\d+$/.test(capacity) || Number(capacity) < 1) {
+  if (!/^\d+$/.test(capacity) || !Number.isSafeInteger(Number(capacity)) || Number(capacity) < 1) {
     errors.capacity = classroomsCopy.form.errors.capacityInvalid;
   }
 

@@ -1,6 +1,6 @@
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
-import { teachers } from '@/features/classes/content';
+import { teachers } from '@/features/classes/mockContent';
 import { classColors, classTableMinWidth } from '@/features/classes/tokens';
 import type { AcademicClass } from '@/features/classes/types';
 
