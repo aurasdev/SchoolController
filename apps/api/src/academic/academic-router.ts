@@ -6,10 +6,14 @@ import type { AcademicService } from './academic-service.js';
 import {
   classroomSchema,
   classSchema,
+  groupPlanSchema,
   idSchema,
   importSchema,
   parseInput,
+  settingsSchema,
   studentSchema,
+  studyPlanImportSchema,
+  subjectTeachersSchema,
   teacherSchema
 } from './academic-validation.js';
 
@@ -17,6 +21,26 @@ export function createAcademicRouter(service: AcademicService, authService: Auth
   const router = Router();
   router.use(requireAuthentication(authService), requireRoles('ADMIN'));
   router.get('/', async (_request, response) => response.json(await service.getData()));
+  router.put('/settings', async (request, response) => {
+    response.json(await service.saveSettings(parseInput(settingsSchema, request.body)));
+  });
+  router.post('/study-plans/import', async (request, response) => {
+    response
+      .status(201)
+      .json(await service.importStudyPlan(parseInput(studyPlanImportSchema, request.body)));
+  });
+  router.patch('/groups/:id/plan', async (request, response) => {
+    const { studyPlanId } = parseInput(groupPlanSchema, request.body);
+    response.json(
+      await service.assignGroupPlan(parseInput(idSchema, request.params.id), studyPlanId)
+    );
+  });
+  router.put('/subjects/:id/teachers', async (request, response) => {
+    const { teacherIds } = parseInput(subjectTeachersSchema, request.body);
+    response.json(
+      await service.saveSubjectTeachers(parseInput(idSchema, request.params.id), teacherIds)
+    );
+  });
   router.post('/teachers', async (request, response) => {
     response.status(201).json(await service.saveTeacher(parseInput(teacherSchema, request.body)));
   });

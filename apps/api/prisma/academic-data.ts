@@ -265,12 +265,26 @@ const COURSE_DAYS: [number, number][] = [
   [0, 3],
   [1, 4]
 ];
+// Each subject sits in exactly one semester of the study plan: the ten subjects of a career are
+// split across the four odd semesters taught in the August - December term.
 const PERIOD_SUBJECTS = [
+  [0, 1, 2],
+  [3, 4, 5],
+  [6, 7],
+  [8, 9]
+];
+const PLAN_SEMESTERS = [1, 3, 5, 7];
+export const SEED_STUDY_PLAN = { year: 2024, name: 'Plan 2024' } as const;
+// Subject split used before study plans existed. Kept only to retire those seeded classes once.
+const LEGACY_PERIOD_SUBJECTS = [
   [0, 1, 2, 3, 4],
   [2, 3, 4, 5, 6],
   [4, 5, 6, 7, 8],
   [5, 6, 7, 8, 9]
 ];
+// First and second semesters take classes in the morning, the rest from 14:30 (shift rule defaults).
+export const MORNING_SLOTS = [8 * 60, 9 * 60 + 30, 11 * 60, 12 * 60 + 30];
+export const AFTERNOON_SLOTS = [14 * 60 + 30, 16 * 60, 17 * 60 + 30, 19 * 60];
 
 function item<T>(items: readonly T[], index: number): T {
   const value = items[index];
@@ -481,8 +495,13 @@ export function buildAcademicSeedData() {
               classroom.code.startsWith(group.departmentCode === 'MED' ? 'LM' : 'LC'))
         );
         let placed = false;
-        for (let offset = 0; offset < 6 && !placed; offset += 1) {
-          const slot = (groupIndex + courseIndex + offset) % 6;
+        const shiftSlots = group.semester <= 2 ? MORNING_SLOTS : AFTERNOON_SLOTS;
+        for (let offset = 0; offset < shiftSlots.length && !placed; offset += 1) {
+          const startMinutes = item(
+            shiftSlots,
+            (groupIndex + courseIndex + offset) % shiftSlots.length
+          );
+          const slot = startMinutes;
           if (
             !available(`teacher-${teacher.employeeNumber}`, dayOfWeek, slot) ||
             !available(`group-${group.code}`, dayOfWeek, slot)
@@ -492,7 +511,6 @@ export function buildAcademicSeedData() {
             available(`room-${room.code}`, dayOfWeek, slot)
           );
           if (!classroom) continue;
-          const startMinutes = 8 * 60 + slot * 90;
           const startTime = new Date(
             Date.UTC(1970, 0, 1, Math.floor(startMinutes / 60), startMinutes % 60)
           );
@@ -523,5 +541,60 @@ export function buildAcademicSeedData() {
     });
   });
 
-  return { departments: DEPARTMENTS, teachers, groups, students, subjects, classrooms, meetings };
+  const subjectCode = (departmentCode: string, index: number) =>
+    `${departmentCode}-${String(index + 1).padStart(3, '0')}`;
+  const studyPlans = DEPARTMENTS.map((department) => ({
+    departmentCode: department.code,
+    ...SEED_STUDY_PLAN,
+    entries: PERIOD_SUBJECTS.flatMap((indexes, semesterIndex) =>
+      indexes.map((subjectIndex) => ({
+        subjectCode: subjectCode(department.code, subjectIndex),
+        semester: item(PLAN_SEMESTERS, semesterIndex)
+      }))
+    )
+  }));
+  const legacyMeetingIds = groups.flatMap((group) =>
+    item(LEGACY_PERIOD_SUBJECTS, Math.floor((group.semester - 1) / 2)).flatMap(
+      (subjectIndex, courseIndex) =>
+        item(COURSE_DAYS, courseIndex).map((_day, meetingIndex) =>
+          academicSeedId(
+            `meeting:${group.code}:${subjectCode(group.departmentCode, subjectIndex)}:${meetingIndex}`
+          )
+        )
+    )
+  );
+
+  // Teachers allowed to teach each subject: the one the seed assigned, plus a second teacher of the
+  // career for subjects with an odd code number. A single entry means "only that teacher".
+  const assigned = new Map(
+    meetings.map((meeting) => [meeting.subjectCode, meeting.employeeNumber])
+  );
+  const subjectTeachers = [...assigned].flatMap(([code, employeeNumber]) => {
+    const pool = teachers.filter(
+      (teacher) =>
+        teacher.departmentCode === code.split('-')[0] && teacher.employmentStatus === 'Activo'
+    );
+    const next = item(
+      pool,
+      (pool.findIndex((t) => t.employeeNumber === employeeNumber) + 1) % pool.length
+    );
+    const second = Number(code.slice(-3)) % 2 === 1 && next.employeeNumber !== employeeNumber;
+    return [
+      { subjectCode: code, employeeNumber },
+      ...(second ? [{ subjectCode: code, employeeNumber: next.employeeNumber }] : [])
+    ];
+  });
+
+  return {
+    departments: DEPARTMENTS,
+    teachers,
+    groups,
+    students,
+    subjects,
+    classrooms,
+    meetings,
+    studyPlans,
+    subjectTeachers,
+    legacyMeetingIds
+  };
 }

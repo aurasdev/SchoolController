@@ -39,7 +39,7 @@ async function validateAcademicPeriod(client: Prisma.TransactionClient, academic
       throw new Error(`Assignment ${assignment.id} belongs to different academic departments.`);
     const start = assignment.startTime.getUTCHours() * 60 + assignment.startTime.getUTCMinutes();
     const end = assignment.endTime.getUTCHours() * 60 + assignment.endTime.getUTCMinutes();
-    if (start < 8 * 60 || end > 17 * 60 || end <= start)
+    if (start < 6 * 60 || end > 22 * 60 || end <= start)
       throw new Error(`Assignment ${assignment.id} has invalid working hours.`);
     for (const resource of [
       `teacher-${assignment.teacherId}`,
@@ -176,6 +176,44 @@ export async function seedAcademicData(client: PrismaClient) {
         });
         subjectIds.set(subject.code, record.id);
       }
+      if (!(await transaction.studyPlan.count())) {
+        // First run with study plans: retire the earlier seeded timetable, which mixed semesters.
+        await transaction.scheduleAssignment.deleteMany({
+          where: { id: { in: data.legacyMeetingIds } }
+        });
+      }
+      for (const plan of data.studyPlans) {
+        const planDepartmentId = departmentId(plan.departmentCode);
+        const record = await transaction.studyPlan.upsert({
+          where: { departmentId_year: { departmentId: planDepartmentId, year: plan.year } },
+          create: { departmentId: planDepartmentId, year: plan.year, name: plan.name },
+          update: {}
+        });
+        for (const entry of plan.entries) {
+          const subjectId = subjectIds.get(entry.subjectCode);
+          if (!subjectId) throw new Error(`Unknown plan subject ${entry.subjectCode}.`);
+          await transaction.studyPlanSubject.upsert({
+            where: { studyPlanId_subjectId: { studyPlanId: record.id, subjectId } },
+            create: { studyPlanId: record.id, subjectId, semester: entry.semester },
+            update: {}
+          });
+        }
+        await transaction.group.updateMany({
+          where: { departmentId: planDepartmentId, academicPeriodId: period.id, studyPlanId: null },
+          data: { studyPlanId: record.id }
+        });
+      }
+      for (const entry of data.subjectTeachers) {
+        const subjectId = subjectIds.get(entry.subjectCode);
+        const teacherId = teacherIds.get(entry.employeeNumber);
+        if (!subjectId || !teacherId)
+          throw new Error(`Incomplete subject teacher ${entry.subjectCode}.`);
+        await transaction.subjectTeacher.upsert({
+          where: { subjectId_teacherId: { subjectId, teacherId } },
+          create: { subjectId, teacherId },
+          update: {}
+        });
+      }
       const classroomIds = new Map<string, string>();
       for (const classroom of data.classrooms) {
         const record = await transaction.classroom.upsert({
@@ -248,6 +286,7 @@ export async function seedAcademicData(client: PrismaClient) {
         teachers: await transaction.teacher.count(),
         groups: await transaction.group.count(),
         subjects: await transaction.subject.count(),
+        studyPlans: await transaction.studyPlan.count(),
         classrooms: await transaction.classroom.count(),
         assignments,
         activities: await transaction.academicActivity.count(),

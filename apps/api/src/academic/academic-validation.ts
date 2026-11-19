@@ -74,6 +74,65 @@ export const classSchema = z
     path: ['startTime'],
     message: 'Las clases deben estar entre las 06:00 y las 22:00.'
   });
+const semester = z.number().int().min(1).max(12);
+export const settingsSchema = z
+  .object({
+    enabled: z.boolean(),
+    morningSemesters: z.array(semester).max(12),
+    afternoonSemesters: z.array(semester).max(12),
+    morningStart: time,
+    afternoonStart: time,
+    dayEnd: time
+  })
+  .strict()
+  .refine((input) => input.morningStart >= '06:00' && input.dayEnd <= '22:00', {
+    path: ['morningStart'],
+    message: 'Los turnos deben estar entre las 06:00 y las 22:00.'
+  })
+  .refine(
+    (input) => input.morningStart < input.afternoonStart && input.afternoonStart < input.dayEnd,
+    {
+      path: ['afternoonStart'],
+      message: 'El orden debe ser: inicio de mañana, inicio de tarde y fin del día.'
+    }
+  )
+  .refine((input) => !input.morningSemesters.some((n) => input.afternoonSemesters.includes(n)), {
+    path: ['afternoonSemesters'],
+    message: 'Un semestre no puede tener prioridad de mañana y de tarde a la vez.'
+  });
+export const studyPlanImportSchema = z
+  .object({
+    departmentId: identifier,
+    year: z.number().int().min(1990).max(2100),
+    name: z.string().trim().min(3).max(100),
+    subjects: z
+      .array(
+        z
+          .object({
+            code,
+            name: z.string().trim().min(2).max(150),
+            semester: z.number().int().min(1).max(12)
+          })
+          .strict()
+      )
+      .min(1)
+      .max(200)
+  })
+  .strict()
+  .refine(
+    (input) =>
+      new Set(input.subjects.map((subject) => subject.code.toUpperCase())).size ===
+      input.subjects.length,
+    { path: ['subjects'], message: 'Hay claves de materia repetidas.' }
+  );
+export const subjectTeachersSchema = z
+  .object({ teacherIds: z.array(identifier).max(50) })
+  .strict()
+  .refine((input) => new Set(input.teacherIds).size === input.teacherIds.length, {
+    path: ['teacherIds'],
+    message: 'Hay docentes repetidos.'
+  });
+export const groupPlanSchema = z.object({ studyPlanId: identifier.nullable() }).strict();
 export const importSchema = z.object({ items: z.array(classSchema).min(1).max(200) }).strict();
 export const idSchema = identifier;
 

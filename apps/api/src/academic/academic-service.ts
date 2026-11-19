@@ -5,13 +5,17 @@ import type {
   AcademicData,
   ClassInput,
   ClassroomInput,
+  ShiftSettings,
   StudentInput,
+  StudyPlanImportInput,
   TeacherInput
 } from '@school-controller/shared';
 
 import { passwordHasher } from '../auth/password-hasher.js';
 import { AppError } from '../errors/app-error.js';
 import { timeAsDate, timeAsString } from './academic-validation.js';
+import { planWarning } from './plan-rules.js';
+import { defaultShiftSettings, shiftWarning } from './shift-rules.js';
 
 type Transaction = Prisma.TransactionClient;
 const days = {
@@ -84,6 +88,19 @@ async function recordActivity(tx: Transaction, title: string) {
   await tx.academicActivity.create({ data: { title } });
 }
 
+async function readSettings(tx: Transaction): Promise<ShiftSettings> {
+  const row = await tx.schedulingSettings.findUnique({ where: { id: 1 } });
+  if (!row) return defaultShiftSettings;
+  return {
+    enabled: row.shiftRulesEnabled,
+    morningSemesters: row.morningSemesters,
+    afternoonSemesters: row.afternoonSemesters,
+    morningStart: row.morningStart,
+    afternoonStart: row.afternoonStart,
+    dayEnd: row.dayEnd
+  };
+}
+
 async function ensureGroupCapacity(tx: Transaction, groupId: string, additionalStudents = 0) {
   const count = await tx.student.count({ where: { groupId, user: { isActive: true } } });
   const assignment = await tx.scheduleAssignment.findFirst({
@@ -126,6 +143,13 @@ export async function validateClass(tx: Transaction, input: ClassInput, existing
     throw conflict('Selecciona un docente de la carrera de la materia.');
   if (!teacher.user.isActive || teacher.employmentStatus !== 'Activo')
     throw conflict('El docente debe estar activo para asignarle clases.');
+  const eligible = await tx.subjectTeacher.findMany({ where: { subjectId: subject.id } });
+  if (eligible.length && !eligible.some((entry) => entry.teacherId === teacher.id))
+    throw conflict(
+      eligible.length === 1
+        ? `${subject.name} solo la puede impartir un docente y no es el seleccionado.`
+        : `Selecciona uno de los ${eligible.length} docentes habilitados para ${subject.name}.`
+    );
   if (classroom.status !== 'available')
     throw conflict(`El aula ${classroom.code} no está disponible.`);
   if (classroom.capacity === null || classroom.capacity < group._count.students) {
@@ -161,11 +185,35 @@ export async function validateClass(tx: Transaction, input: ClassInput, existing
       `${resource} ya tiene ${overlapping.subject.name} el ${days[input.dayOfWeek]} de ${timeAsString(overlapping.startTime)} a ${timeAsString(overlapping.endTime)}.`
     );
   }
+  const shift = shiftWarning(
+    await readSettings(tx),
+    group.semester,
+    group.code,
+    input.startTime,
+    input.endTime
+  );
+  const plan = group.studyPlanId
+    ? await tx.studyPlan.findUnique({
+        where: { id: group.studyPlanId },
+        include: { subjects: { where: { subjectId: subject.id } } }
+      })
+    : null;
+  const planIssue = plan
+    ? planWarning({
+        groupCode: group.code,
+        groupSemester: group.semester,
+        planName: plan.name,
+        planSemester: plan.subjects[0]?.semester
+      })
+    : null;
   return {
     academicPeriodId: schedule.academicPeriodId,
     startTime,
     endTime,
-    subjectName: subject.name
+    subjectName: subject.name,
+    warnings: [shift, planIssue]
+      .filter((message): message is string => message !== null)
+      .map((message) => `${subject.name}: ${message}`)
   };
 }
 
@@ -187,7 +235,10 @@ export function createAcademicService(client: PrismaClient) {
             activities
           ] = await Promise.all([
             tx.department.findMany({ orderBy: { name: 'asc' } }),
-            tx.subject.findMany({ orderBy: { name: 'asc' } }),
+            tx.subject.findMany({
+              include: { teachers: { select: { teacherId: true } } },
+              orderBy: { name: 'asc' }
+            }),
             tx.group.findMany({
               include: {
                 department: true,
@@ -223,13 +274,28 @@ export function createAcademicService(client: PrismaClient) {
             tx.academicActivity.findMany({ take: 10, orderBy: { createdAt: 'desc' } })
           ]);
           const currentAssignments = assignments.filter((entry) => entry.academicPeriod.isActive);
+          const settings = await readSettings(tx);
+          const studyPlans = await tx.studyPlan.findMany({
+            include: { subjects: true, _count: { select: { groups: true } } },
+            orderBy: [{ year: 'desc' }, { name: 'asc' }]
+          });
           return {
+            settings,
+            studyPlans: studyPlans.map((plan) => ({
+              id: plan.id,
+              departmentId: plan.departmentId,
+              year: plan.year,
+              name: plan.name,
+              groups: plan._count.groups,
+              subjects: plan.subjects.map(({ subjectId, semester }) => ({ subjectId, semester }))
+            })),
             departments: departments.map(({ id, code, name }) => ({ id, code, name })),
-            subjects: subjects.map(({ id, code, name, departmentId }) => ({
+            subjects: subjects.map(({ id, code, name, departmentId, teachers }) => ({
               id,
               code,
               name,
-              departmentId
+              departmentId,
+              teacherIds: teachers.map((entry) => entry.teacherId)
             })),
             groups: groups.map((group) => ({
               id: group.id,
@@ -239,7 +305,8 @@ export function createAcademicService(client: PrismaClient) {
               degree: group.department.name,
               semester: group.semester,
               students: group._count.students,
-              academicPeriodId: group.academicPeriodId
+              academicPeriodId: group.academicPeriodId,
+              studyPlanId: group.studyPlanId
             })),
             periods: periods.map((period) => ({
               id: period.id,
@@ -501,11 +568,117 @@ export function createAcademicService(client: PrismaClient) {
       });
     },
 
+    async importStudyPlan(input: StudyPlanImportInput) {
+      return write(client, async (tx) => {
+        const department = await tx.department.findUnique({ where: { id: input.departmentId } });
+        if (!department) throw notFound('La carrera');
+        const entries: { subjectId: string; semester: number }[] = [];
+        for (const item of input.subjects) {
+          const code = item.code.toUpperCase();
+          const existing = await tx.subject.findUnique({ where: { code } });
+          if (existing?.departmentId && existing.departmentId !== department.id)
+            throw conflict(`La materia ${code} pertenece a otra carrera.`);
+          const subject =
+            existing ??
+            (await tx.subject.create({
+              data: { code, name: item.name, departmentId: department.id }
+            }));
+          entries.push({ subjectId: subject.id, semester: item.semester });
+        }
+        const plan = await tx.studyPlan.upsert({
+          where: { departmentId_year: { departmentId: department.id, year: input.year } },
+          create: { departmentId: department.id, year: input.year, name: input.name },
+          update: { name: input.name }
+        });
+        await tx.studyPlanSubject.deleteMany({ where: { studyPlanId: plan.id } });
+        await tx.studyPlanSubject.createMany({
+          data: entries.map((entry) => ({ ...entry, studyPlanId: plan.id }))
+        });
+        await recordActivity(
+          tx,
+          `Se importó el ${plan.name} de ${department.name} con ${entries.length} materias.`
+        );
+        return { id: plan.id };
+      });
+    },
+
+    async assignGroupPlan(groupId: string, studyPlanId: string | null) {
+      return write(client, async (tx) => {
+        const group = await tx.group.findUnique({ where: { id: groupId } });
+        if (!group) throw notFound('El grupo');
+        if (studyPlanId) {
+          const plan = await tx.studyPlan.findUnique({ where: { id: studyPlanId } });
+          if (!plan) throw notFound('El plan de estudios');
+          if (plan.departmentId !== group.departmentId)
+            throw conflict('El plan de estudios debe ser de la misma carrera que el grupo.');
+        }
+        await tx.group.update({ where: { id: groupId }, data: { studyPlanId } });
+        await recordActivity(tx, `Se actualizó el plan de estudios del grupo ${group.code}.`);
+        return { id: group.id };
+      });
+    },
+
+    async saveSubjectTeachers(subjectId: string, teacherIds: string[]) {
+      return write(client, async (tx) => {
+        const subject = await tx.subject.findUnique({ where: { id: subjectId } });
+        if (!subject) throw notFound('La materia');
+        const teachers = await tx.teacher.findMany({ where: { id: { in: teacherIds } } });
+        if (teachers.length !== teacherIds.length) throw notFound('El docente');
+        if (subject.departmentId && teachers.some((t) => t.departmentId !== subject.departmentId))
+          throw conflict('Los docentes habilitados deben ser de la carrera de la materia.');
+        if (teacherIds.length) {
+          const orphaned = await tx.scheduleAssignment.findFirst({
+            where: {
+              subjectId,
+              teacherId: { notIn: teacherIds },
+              academicPeriod: { isActive: true }
+            },
+            include: { teacher: { include: { user: true } } }
+          });
+          if (orphaned)
+            throw conflict(
+              `Reasigna las clases de ${subject.name} que imparte ${orphaned.teacher.displayName || fullName(orphaned.teacher.user)} antes de quitarlo.`
+            );
+        }
+        await tx.subjectTeacher.deleteMany({ where: { subjectId } });
+        await tx.subjectTeacher.createMany({
+          data: teacherIds.map((teacherId) => ({ subjectId, teacherId }))
+        });
+        await recordActivity(
+          tx,
+          teacherIds.length
+            ? `Se actualizaron los docentes habilitados para ${subject.name}.`
+            : `${subject.name} quedó abierta a cualquier docente de la carrera.`
+        );
+        return { id: subject.id };
+      });
+    },
+
+    async saveSettings(input: ShiftSettings) {
+      return write(client, async (tx) => {
+        const data = {
+          shiftRulesEnabled: input.enabled,
+          morningSemesters: [...new Set(input.morningSemesters)].sort((a, b) => a - b),
+          afternoonSemesters: [...new Set(input.afternoonSemesters)].sort((a, b) => a - b),
+          morningStart: input.morningStart,
+          afternoonStart: input.afternoonStart,
+          dayEnd: input.dayEnd
+        };
+        await tx.schedulingSettings.upsert({
+          where: { id: 1 },
+          create: { id: 1, ...data },
+          update: data
+        });
+        await recordActivity(tx, 'Se actualizó la configuración de turnos por semestre.');
+        return { id: 'settings' };
+      });
+    },
+
     async saveClass(input: ClassInput, id?: string) {
       return write(client, async (tx) => {
         if (id && !(await tx.scheduleAssignment.findUnique({ where: { id } })))
           throw notFound('La clase');
-        const { subjectName, ...validated } = await validateClass(tx, input, id);
+        const { subjectName, warnings, ...validated } = await validateClass(tx, input, id);
         const data = { ...input, ...validated };
         const session = id
           ? await tx.scheduleAssignment.update({ where: { id }, data })
@@ -514,20 +687,26 @@ export function createAcademicService(client: PrismaClient) {
           tx,
           `${id ? 'Se actualizó' : 'Se programó'} la clase de ${subjectName}.`
         );
-        return { id: session.id };
+        return { id: session.id, warnings };
       });
     },
 
     async importClasses(items: ClassInput[]) {
       return write(client, async (tx) => {
         const ids: string[] = [];
+        const warnings: string[] = [];
         for (const input of items) {
-          const { subjectName: _subjectName, ...validated } = await validateClass(tx, input);
+          const {
+            subjectName: _subjectName,
+            warnings: itemWarnings,
+            ...validated
+          } = await validateClass(tx, input);
+          warnings.push(...itemWarnings);
           const session = await tx.scheduleAssignment.create({ data: { ...input, ...validated } });
           ids.push(session.id);
         }
         await recordActivity(tx, `Se importaron ${ids.length} clases al horario académico.`);
-        return { ids };
+        return { ids, warnings };
       });
     }
   };

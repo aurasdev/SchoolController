@@ -22,7 +22,8 @@ function setup() {
     subject: {
       findUnique: vi
         .fn()
-        .mockResolvedValue({ id: 'subject', name: 'Cálculo diferencial', departmentId: null })
+        .mockResolvedValue({ id: 'subject', name: 'Cálculo diferencial', departmentId: null }),
+      create: vi.fn().mockResolvedValue({ id: 'new-subject' })
     },
     department: { findUnique: vi.fn().mockResolvedValue({ id: 'department' }) },
     teacher: {
@@ -32,6 +33,7 @@ function setup() {
         employmentStatus: 'Activo',
         user: { isActive: true }
       }),
+      findMany: vi.fn().mockResolvedValue([{ id: 'teacher', departmentId: 'department' }]),
       create: vi.fn().mockResolvedValue({ id: 'teacher' }),
       update: vi.fn().mockResolvedValue({ id: 'teacher' })
     },
@@ -50,7 +52,8 @@ function setup() {
         academicPeriodId: 'period',
         academicPeriod: { isActive: true },
         _count: { students: 30 }
-      })
+      }),
+      update: vi.fn().mockResolvedValue({ id: 'group' })
     },
     classroom: {
       findUnique: vi
@@ -73,7 +76,24 @@ function setup() {
       findUnique: vi.fn().mockResolvedValue({ id: 'assignment' }),
       update: vi.fn().mockResolvedValue({ id: 'assignment' })
     },
-    academicActivity: { create: vi.fn().mockResolvedValue({ id: 'activity' }) }
+    academicActivity: { create: vi.fn().mockResolvedValue({ id: 'activity' }) },
+    schedulingSettings: {
+      findUnique: vi.fn().mockResolvedValue(null),
+      upsert: vi.fn().mockResolvedValue({})
+    },
+    studyPlan: {
+      findUnique: vi.fn().mockResolvedValue(null),
+      upsert: vi.fn().mockResolvedValue({ id: 'plan', name: 'Plan 2024' })
+    },
+    studyPlanSubject: {
+      deleteMany: vi.fn().mockResolvedValue({}),
+      createMany: vi.fn().mockResolvedValue({})
+    },
+    subjectTeacher: {
+      findMany: vi.fn().mockResolvedValue([]),
+      deleteMany: vi.fn().mockResolvedValue({}),
+      createMany: vi.fn().mockResolvedValue({})
+    }
   };
   const transaction = tx as unknown as Prisma.TransactionClient;
   const client = {
@@ -95,6 +115,175 @@ describe('academic scheduling invariants', () => {
     const value = await validateClass(transaction, input);
     expect(value.academicPeriodId).toBe('period');
     expect(value.startTime.toISOString()).toBe('1970-01-01T08:00:00.000Z');
+  });
+
+  describe('shift rules', () => {
+    const enabled = {
+      shiftRulesEnabled: true,
+      morningSemesters: [1, 2],
+      afternoonSemesters: [3],
+      morningStart: '08:00',
+      afternoonStart: '14:30',
+      dayEnd: '22:00'
+    };
+    const thirdSemesterGroup = {
+      id: 'group',
+      code: 'ISC-3A',
+      semester: 3,
+      departmentId: 'department',
+      academicPeriodId: 'period',
+      academicPeriod: { isActive: true },
+      _count: { students: 30 }
+    };
+
+    it('warns, without rejecting, when a class is outside the shift of its semester', async () => {
+      const { tx, transaction } = setup();
+      tx.schedulingSettings.findUnique.mockResolvedValue(enabled);
+      tx.group.findUnique.mockResolvedValue(thirdSemesterGroup);
+      const value = await validateClass(transaction, input);
+      expect(value.warnings).toHaveLength(1);
+      expect(value.warnings[0]).toContain('ISC-3A');
+    });
+
+    it('does not warn inside the shift or when the rule is disabled', async () => {
+      const { tx, transaction } = setup();
+      tx.group.findUnique.mockResolvedValue(thirdSemesterGroup);
+      expect((await validateClass(transaction, input)).warnings).toEqual([]);
+      tx.schedulingSettings.findUnique.mockResolvedValue(enabled);
+      const inShift = { ...input, startTime: '15:00', endTime: '16:00' };
+      expect((await validateClass(transaction, inShift)).warnings).toEqual([]);
+    });
+  });
+
+  describe('eligible teachers', () => {
+    it('lets any teacher of the career teach a subject without a list', async () => {
+      const { transaction } = setup();
+      await expect(validateClass(transaction, input)).resolves.toBeDefined();
+    });
+
+    it('rejects a teacher outside the list, with a message for a single-teacher subject', async () => {
+      const { tx, transaction } = setup();
+      tx.subjectTeacher.findMany.mockResolvedValue([{ subjectId: 'subject', teacherId: 'other' }]);
+      await expect(validateClass(transaction, input)).rejects.toThrow(
+        'solo la puede impartir un docente'
+      );
+      tx.subjectTeacher.findMany.mockResolvedValue([
+        { subjectId: 'subject', teacherId: 'other' },
+        { subjectId: 'subject', teacherId: 'another' }
+      ]);
+      await expect(validateClass(transaction, input)).rejects.toThrow('2 docentes habilitados');
+    });
+
+    it('accepts a teacher that is on the list', async () => {
+      const { tx, transaction } = setup();
+      tx.subjectTeacher.findMany.mockResolvedValue([
+        { subjectId: 'subject', teacherId: 'teacher' }
+      ]);
+      await expect(validateClass(transaction, input)).resolves.toBeDefined();
+    });
+
+    it('replaces the list, and an empty list opens the subject again', async () => {
+      const { tx, service } = setup();
+      await expect(service.saveSubjectTeachers('subject', ['teacher'])).resolves.toEqual({
+        id: 'subject'
+      });
+      expect(tx.subjectTeacher.createMany).toHaveBeenLastCalledWith({
+        data: [{ subjectId: 'subject', teacherId: 'teacher' }]
+      });
+      tx.teacher.findMany.mockResolvedValue([]);
+      await service.saveSubjectTeachers('subject', []);
+      expect(tx.subjectTeacher.createMany).toHaveBeenLastCalledWith({ data: [] });
+    });
+
+    it('does not drop a teacher who still has classes in the active period', async () => {
+      const { tx, service } = setup();
+      tx.scheduleAssignment.findFirst.mockResolvedValue({
+        teacher: { displayName: 'Dra. Ana Ruiz', user: { firstName: 'Ana', lastName: 'Ruiz' } }
+      });
+      await expect(service.saveSubjectTeachers('subject', ['teacher'])).rejects.toThrow(
+        'Reasigna las clases'
+      );
+      expect(tx.subjectTeacher.deleteMany).not.toHaveBeenCalled();
+    });
+
+    it('only accepts teachers of the career of the subject', async () => {
+      const { tx, service } = setup();
+      tx.subject.findUnique.mockResolvedValue({
+        id: 'subject',
+        name: 'Cálculo',
+        departmentId: 'other'
+      });
+      await expect(service.saveSubjectTeachers('subject', ['teacher'])).rejects.toMatchObject({
+        statusCode: 409
+      });
+    });
+  });
+
+  describe('study plans', () => {
+    it('warns when the group plan places the subject in another semester', async () => {
+      const { tx, transaction } = setup();
+      tx.group.findUnique.mockResolvedValue({
+        id: 'group',
+        code: 'ISC-3A',
+        semester: 3,
+        studyPlanId: 'plan',
+        departmentId: 'department',
+        academicPeriodId: 'period',
+        academicPeriod: { isActive: true },
+        _count: { students: 30 }
+      });
+      tx.studyPlan.findUnique.mockResolvedValue({ name: 'Plan 2020', subjects: [{ semester: 5 }] });
+      const value = await validateClass(transaction, input);
+      expect(value.warnings).toHaveLength(1);
+      expect(value.warnings[0]).toContain('5.º semestre');
+    });
+
+    it('imports a plan creating missing subjects and replacing the previous entries', async () => {
+      const { tx, service } = setup();
+      tx.subject.findUnique.mockResolvedValue(null);
+      await expect(
+        service.importStudyPlan({
+          departmentId: 'department',
+          year: 2024,
+          name: 'Plan 2024',
+          subjects: [
+            { code: 'isc-001', name: 'Fundamentos de programación', semester: 1 },
+            { code: 'ISC-002', name: 'Matemáticas discretas', semester: 3 }
+          ]
+        })
+      ).resolves.toEqual({ id: 'plan' });
+      expect(tx.subject.create).toHaveBeenCalledTimes(2);
+      expect(tx.subject.create.mock.calls[0]![0].data.code).toBe('ISC-001');
+      expect(tx.studyPlanSubject.deleteMany).toHaveBeenCalledOnce();
+      expect(tx.studyPlanSubject.createMany.mock.calls[0]![0].data).toEqual([
+        { subjectId: 'new-subject', semester: 1, studyPlanId: 'plan' },
+        { subjectId: 'new-subject', semester: 3, studyPlanId: 'plan' }
+      ]);
+    });
+
+    it('does not take over a subject that belongs to another career', async () => {
+      const { tx, service } = setup();
+      tx.subject.findUnique.mockResolvedValue({ id: 'subject', departmentId: 'another' });
+      await expect(
+        service.importStudyPlan({
+          departmentId: 'department',
+          year: 2024,
+          name: 'Plan 2024',
+          subjects: [{ code: 'ISC-001', name: 'Cálculo', semester: 1 }]
+        })
+      ).rejects.toMatchObject({ statusCode: 409 });
+      expect(tx.studyPlan.upsert).not.toHaveBeenCalled();
+    });
+
+    it('only assigns a plan of the same career as the group', async () => {
+      const { tx, service } = setup();
+      tx.studyPlan.findUnique.mockResolvedValue({ id: 'plan', departmentId: 'another' });
+      await expect(service.assignGroupPlan('group', 'plan')).rejects.toMatchObject({
+        statusCode: 409
+      });
+      expect(tx.group.update).not.toHaveBeenCalled();
+      await expect(service.assignGroupPlan('group', null)).resolves.toEqual({ id: 'group' });
+    });
   });
 
   it('rejects a group from another period', async () => {
@@ -232,7 +421,7 @@ describe('academic scheduling invariants', () => {
 
   it('takes a transaction lock before checking and writing a session', async () => {
     const { tx, service } = setup();
-    await expect(service.saveClass(input)).resolves.toEqual({ id: 'assignment' });
+    await expect(service.saveClass(input)).resolves.toEqual({ id: 'assignment', warnings: [] });
     expect(tx.$executeRaw.mock.invocationCallOrder[0]).toBeLessThan(
       tx.subject.findUnique.mock.invocationCallOrder[0]!
     );

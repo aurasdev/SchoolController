@@ -56,6 +56,8 @@ export type AcademicSubject = {
   code: string;
   name: string;
   departmentId: string | null;
+  /** Teachers allowed to teach it. Empty: any teacher of the career. One: only that teacher. */
+  teacherIds: string[];
 };
 export type AcademicGroup = {
   id: string;
@@ -66,6 +68,21 @@ export type AcademicGroup = {
   semester: number;
   students: number;
   academicPeriodId: string;
+  studyPlanId: string | null;
+};
+export type StudyPlan = {
+  id: string;
+  departmentId: string;
+  year: number;
+  name: string;
+  groups: number;
+  subjects: { subjectId: string; semester: number }[];
+};
+export type StudyPlanImportInput = {
+  departmentId: string;
+  year: number;
+  name: string;
+  subjects: { code: string; name: string; semester: number }[];
 };
 export type AcademicPeriod = {
   id: string;
@@ -87,4 +104,17 @@ export type AcademicData = {
   teachers: Teacher[];
   students: Student[];
   activities: AcademicActivity[];
+  settings: ShiftSettings;
+  studyPlans: StudyPlan[];
+};
+
+/** Global rule: which semesters should have classes in the morning or in the afternoon. */
+export type ShiftSettings = {
+  enabled: boolean;
+  morningSemesters: number[];
+  afternoonSemesters: number[];
+  /** HH:mm. Morning runs from morningStart to afternoonStart, afternoon from afternoonStart to dayEnd. */
+  morningStart: string;
+  afternoonStart: string;
+  dayEnd: string;
 };
