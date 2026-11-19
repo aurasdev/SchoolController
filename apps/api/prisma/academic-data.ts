@@ -275,6 +275,12 @@ const PERIOD_SUBJECTS = [
 ];
 const PLAN_SEMESTERS = [1, 3, 5, 7];
 export const SEED_STUDY_PLAN = { year: 2024, name: 'Plan 2024' } as const;
+// Elective block of the 5th semester: every option has its own teacher and weekly slot.
+export const ELECTIVE_BLOCK = {
+  name: 'Taller deportivo',
+  semester: 5,
+  options: ['Voleibol', 'Fútbol', 'Ajedrez']
+} as const;
 // Subject split used before study plans existed. Kept only to retire those seeded classes once.
 const LEGACY_PERIOD_SUBJECTS = [
   [0, 1, 2, 3, 4],
@@ -541,17 +547,76 @@ export function buildAcademicSeedData() {
     });
   });
 
+  const electiveCode = (departmentCode: string, optionIndex: number) =>
+    `${departmentCode}-E0${optionIndex + 1}`;
+  for (const group of groups.filter((value) => value.semester === ELECTIVE_BLOCK.semester)) {
+    const pool = teachers.filter(
+      (teacher) =>
+        teacher.departmentCode === group.departmentCode && teacher.employmentStatus === 'Activo'
+    );
+    const rooms = classrooms.filter(
+      (room) => room.status === 'available' && room.type === 'standard' && room.capacity >= 25
+    );
+    ELECTIVE_BLOCK.options.forEach((optionName, optionIndex) => {
+      const code = electiveCode(group.departmentCode, optionIndex);
+      subjects.push({
+        code,
+        name: `${ELECTIVE_BLOCK.name}: ${optionName}`,
+        departmentCode: group.departmentCode,
+        description: `Opción del bloque ${ELECTIVE_BLOCK.name}.`,
+        roomType: 'standard'
+      });
+      const teacher = item(pool, (optionIndex + 4) % pool.length);
+      const dayOfWeek = item(DAYS, (optionIndex * 2 + 1) % DAYS.length);
+      for (let offset = 0; offset < AFTERNOON_SLOTS.length; offset += 1) {
+        const slot = item(AFTERNOON_SLOTS, (optionIndex + offset) % AFTERNOON_SLOTS.length);
+        const room = rooms.find((value) => available(`room-${value.code}`, dayOfWeek, slot));
+        if (
+          !room ||
+          !available(`teacher-${teacher.employeeNumber}`, dayOfWeek, slot) ||
+          !available(`group-${group.code}`, dayOfWeek, slot)
+        )
+          continue;
+        const startTime = new Date(Date.UTC(1970, 0, 1, Math.floor(slot / 60), slot % 60));
+        meetings.push({
+          id: academicSeedId(`meeting:${group.code}:${code}:0`),
+          groupCode: group.code,
+          subjectCode: code,
+          employeeNumber: teacher.employeeNumber,
+          classroomCode: room.code,
+          dayOfWeek,
+          startTime,
+          endTime: new Date(startTime.getTime() + 90 * 60_000),
+          status: 'Active'
+        });
+        [`teacher-${teacher.employeeNumber}`, `group-${group.code}`, `room-${room.code}`].forEach(
+          (resource) => occupied.add(`${resource}:${dayOfWeek}:${slot}`)
+        );
+        return;
+      }
+      throw new Error(`No classroom/time available for ${group.code}, ${code}.`);
+    });
+  }
+
   const subjectCode = (departmentCode: string, index: number) =>
     `${departmentCode}-${String(index + 1).padStart(3, '0')}`;
   const studyPlans = DEPARTMENTS.map((department) => ({
     departmentCode: department.code,
     ...SEED_STUDY_PLAN,
-    entries: PERIOD_SUBJECTS.flatMap((indexes, semesterIndex) =>
-      indexes.map((subjectIndex) => ({
-        subjectCode: subjectCode(department.code, subjectIndex),
-        semester: item(PLAN_SEMESTERS, semesterIndex)
+    entries: [
+      ...PERIOD_SUBJECTS.flatMap((indexes, semesterIndex) =>
+        indexes.map((subjectIndex) => ({
+          subjectCode: subjectCode(department.code, subjectIndex),
+          semester: item(PLAN_SEMESTERS, semesterIndex),
+          block: undefined as string | undefined
+        }))
+      ),
+      ...ELECTIVE_BLOCK.options.map((_option, optionIndex) => ({
+        subjectCode: electiveCode(department.code, optionIndex),
+        semester: ELECTIVE_BLOCK.semester,
+        block: ELECTIVE_BLOCK.name as string | undefined
       }))
-    )
+    ]
   }));
   const legacyMeetingIds = groups.flatMap((group) =>
     item(LEGACY_PERIOD_SUBJECTS, Math.floor((group.semester - 1) / 2)).flatMap(

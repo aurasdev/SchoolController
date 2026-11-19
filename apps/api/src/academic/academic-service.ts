@@ -14,6 +14,7 @@ import type {
 import { passwordHasher } from '../auth/password-hasher.js';
 import { AppError } from '../errors/app-error.js';
 import { timeAsDate, timeAsString } from './academic-validation.js';
+import { type ClassSlot, rankElectiveOptions } from './elective-rules.js';
 import { planWarning } from './plan-rules.js';
 import { defaultShiftSettings, shiftWarning } from './shift-rules.js';
 
@@ -276,8 +277,25 @@ export function createAcademicService(client: PrismaClient) {
           const currentAssignments = assignments.filter((entry) => entry.academicPeriod.isActive);
           const settings = await readSettings(tx);
           const studyPlans = await tx.studyPlan.findMany({
-            include: { subjects: true, _count: { select: { groups: true } } },
+            include: {
+              subjects: true,
+              electiveBlocks: { orderBy: [{ semester: 'asc' }, { name: 'asc' }] },
+              _count: { select: { groups: true } }
+            },
             orderBy: [{ year: 'desc' }, { name: 'asc' }]
+          });
+          const slots: ClassSlot[] = currentAssignments.map((entry) => {
+            const start = timeAsString(entry.startTime);
+            const end = timeAsString(entry.endTime);
+            const teacherName = entry.teacher.displayName || fullName(entry.teacher.user);
+            return {
+              groupId: entry.groupId,
+              subjectId: entry.subjectId,
+              day: entry.dayOfWeek,
+              start,
+              end,
+              label: `${days[entry.dayOfWeek]} ${start}–${end} · ${teacherName} · ${entry.classroom.code}`
+            };
           });
           return {
             settings,
@@ -287,7 +305,29 @@ export function createAcademicService(client: PrismaClient) {
               year: plan.year,
               name: plan.name,
               groups: plan._count.groups,
-              subjects: plan.subjects.map(({ subjectId, semester }) => ({ subjectId, semester }))
+              subjects: plan.subjects.map(({ subjectId, semester, electiveBlockId }) => ({
+                subjectId,
+                semester,
+                blockId: electiveBlockId
+              })),
+              blocks: plan.electiveBlocks.map((block) => ({
+                id: block.id,
+                name: block.name,
+                semester: block.semester,
+                options: rankElectiveOptions({
+                  optionSubjectIds: plan.subjects
+                    .filter((entry) => entry.electiveBlockId === block.id)
+                    .map((entry) => entry.subjectId),
+                  targetGroupIds: groups
+                    .filter(
+                      (group) => group.studyPlanId === plan.id && group.semester === block.semester
+                    )
+                    .map((group) => group.id),
+                  slots,
+                  settings,
+                  semester: block.semester
+                })
+              }))
             })),
             departments: departments.map(({ id, code, name }) => ({ id, code, name })),
             subjects: subjects.map(({ id, code, name, departmentId, teachers }) => ({
@@ -572,7 +612,7 @@ export function createAcademicService(client: PrismaClient) {
       return write(client, async (tx) => {
         const department = await tx.department.findUnique({ where: { id: input.departmentId } });
         if (!department) throw notFound('La carrera');
-        const entries: { subjectId: string; semester: number }[] = [];
+        const entries: { subjectId: string; semester: number; block?: string }[] = [];
         for (const item of input.subjects) {
           const code = item.code.toUpperCase();
           const existing = await tx.subject.findUnique({ where: { code } });
@@ -583,7 +623,7 @@ export function createAcademicService(client: PrismaClient) {
             (await tx.subject.create({
               data: { code, name: item.name, departmentId: department.id }
             }));
-          entries.push({ subjectId: subject.id, semester: item.semester });
+          entries.push({ subjectId: subject.id, semester: item.semester, block: item.block });
         }
         const plan = await tx.studyPlan.upsert({
           where: { departmentId_year: { departmentId: department.id, year: input.year } },
@@ -591,8 +631,23 @@ export function createAcademicService(client: PrismaClient) {
           update: { name: input.name }
         });
         await tx.studyPlanSubject.deleteMany({ where: { studyPlanId: plan.id } });
+        await tx.electiveBlock.deleteMany({ where: { studyPlanId: plan.id } });
+        const blockIds = new Map<string, string>();
+        for (const { block, semester } of entries) {
+          const key = block?.toLowerCase();
+          if (!block || !key || blockIds.has(key)) continue;
+          const created = await tx.electiveBlock.create({
+            data: { studyPlanId: plan.id, name: block, semester }
+          });
+          blockIds.set(key, created.id);
+        }
         await tx.studyPlanSubject.createMany({
-          data: entries.map((entry) => ({ ...entry, studyPlanId: plan.id }))
+          data: entries.map(({ subjectId, semester, block }) => ({
+            subjectId,
+            semester,
+            studyPlanId: plan.id,
+            electiveBlockId: block ? (blockIds.get(block.toLowerCase()) ?? null) : null
+          }))
         });
         await recordActivity(
           tx,

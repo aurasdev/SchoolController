@@ -246,15 +246,16 @@ model SchedulingSettings {
 // A career can have several study plans (e.g. 2020 and 2024); each groups' plan decides which
 // semester a subject belongs to, so the same subject can be 5th semester in one plan and 7th in another.
 model StudyPlan {
-  id           String             @id @default(uuid()) @db.Uuid
-  departmentId String             @map("department_id") @db.Uuid
-  year         Int
-  name         String             @db.VarChar(100)
-  department   Department         @relation(fields: [departmentId], references: [id], onDelete: Restrict)
-  subjects     StudyPlanSubject[]
-  groups       Group[]
-  createdAt    DateTime           @default(now()) @map("created_at")
-  updatedAt    DateTime           @updatedAt @map("updated_at")
+  id             String             @id @default(uuid()) @db.Uuid
+  departmentId   String             @map("department_id") @db.Uuid
+  year           Int
+  name           String             @db.VarChar(100)
+  department     Department         @relation(fields: [departmentId], references: [id], onDelete: Restrict)
+  subjects       StudyPlanSubject[]
+  electiveBlocks ElectiveBlock[]
+  groups         Group[]
+  createdAt      DateTime           @default(now()) @map("created_at")
+  updatedAt      DateTime           @updatedAt @map("updated_at")
 
   @@unique([departmentId, year])
   @@map("study_plans")
@@ -273,14 +274,31 @@ model SubjectTeacher {
 }
 
 model StudyPlanSubject {
-  id          String    @id @default(uuid()) @db.Uuid
-  studyPlanId String    @map("study_plan_id") @db.Uuid
-  subjectId   String    @map("subject_id") @db.Uuid
-  semester    Int
-  studyPlan   StudyPlan @relation(fields: [studyPlanId], references: [id], onDelete: Cascade)
-  subject     Subject   @relation(fields: [subjectId], references: [id], onDelete: Restrict)
+  id              String         @id @default(uuid()) @db.Uuid
+  studyPlanId     String         @map("study_plan_id") @db.Uuid
+  subjectId       String         @map("subject_id") @db.Uuid
+  semester        Int
+  electiveBlockId String?        @map("elective_block_id") @db.Uuid
+  electiveBlock   ElectiveBlock? @relation(fields: [electiveBlockId], references: [id], onDelete: SetNull)
+  studyPlan       StudyPlan      @relation(fields: [studyPlanId], references: [id], onDelete: Cascade)
+  subject         Subject        @relation(fields: [subjectId], references: [id], onDelete: Restrict)
 
   @@unique([studyPlanId, subjectId])
   @@index([subjectId])
+  @@index([electiveBlockId])
   @@map("study_plan_subjects")
+}
+
+// A block of elective options inside a plan (e.g. "Taller deportivo": volleyball, football, chess).
+// The options are the plan subjects that point to the block; each has its own classes and teachers.
+model ElectiveBlock {
+  id          String             @id @default(uuid()) @db.Uuid
+  studyPlanId String             @map("study_plan_id") @db.Uuid
+  name        String             @db.VarChar(100)
+  semester    Int
+  studyPlan   StudyPlan          @relation(fields: [studyPlanId], references: [id], onDelete: Cascade)
+  options     StudyPlanSubject[]
+
+  @@unique([studyPlanId, name])
+  @@map("elective_blocks")
 }

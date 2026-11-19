@@ -189,12 +189,31 @@ export async function seedAcademicData(client: PrismaClient) {
           create: { departmentId: planDepartmentId, year: plan.year, name: plan.name },
           update: {}
         });
+        const blockIds = new Map<string, string>();
         for (const entry of plan.entries) {
           const subjectId = subjectIds.get(entry.subjectCode);
           if (!subjectId) throw new Error(`Unknown plan subject ${entry.subjectCode}.`);
+          let electiveBlockId: string | null = null;
+          if (entry.block) {
+            electiveBlockId =
+              blockIds.get(entry.block) ??
+              (
+                await transaction.electiveBlock.upsert({
+                  where: { studyPlanId_name: { studyPlanId: record.id, name: entry.block } },
+                  create: { studyPlanId: record.id, name: entry.block, semester: entry.semester },
+                  update: {}
+                })
+              ).id;
+            blockIds.set(entry.block, electiveBlockId);
+          }
           await transaction.studyPlanSubject.upsert({
             where: { studyPlanId_subjectId: { studyPlanId: record.id, subjectId } },
-            create: { studyPlanId: record.id, subjectId, semester: entry.semester },
+            create: {
+              studyPlanId: record.id,
+              subjectId,
+              semester: entry.semester,
+              electiveBlockId
+            },
             update: {}
           });
         }

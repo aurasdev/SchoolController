@@ -111,7 +111,8 @@ export const studyPlanImportSchema = z
           .object({
             code,
             name: z.string().trim().min(2).max(150),
-            semester: z.number().int().min(1).max(12)
+            semester: z.number().int().min(1).max(12),
+            block: z.string().trim().min(2).max(100).optional()
           })
           .strict()
       )
@@ -124,6 +125,17 @@ export const studyPlanImportSchema = z
       new Set(input.subjects.map((subject) => subject.code.toUpperCase())).size ===
       input.subjects.length,
     { path: ['subjects'], message: 'Hay claves de materia repetidas.' }
+  )
+  .refine(
+    (input) => {
+      const semesters = new Map<string, number>();
+      return input.subjects.every(({ block, semester }) => {
+        if (!block) return true;
+        const key = block.toLowerCase();
+        return (semesters.get(key) ?? semesters.set(key, semester).get(key)) === semester;
+      });
+    },
+    { path: ['subjects'], message: 'Las materias de un mismo bloque deben ser del mismo semestre.' }
   );
 export const subjectTeachersSchema = z
   .object({ teacherIds: z.array(identifier).max(50) })

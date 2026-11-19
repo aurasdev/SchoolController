@@ -1,4 +1,9 @@
-import type { AcademicData, StudyPlan, StudyPlanImportInput } from '@school-controller/shared';
+import type {
+  AcademicData,
+  ElectiveFit,
+  StudyPlan,
+  StudyPlanImportInput
+} from '@school-controller/shared';
 import { useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
@@ -14,6 +19,13 @@ type StudyPlansPanelProps = {
 };
 
 type Message = { kind: 'error' | 'success'; text: string };
+
+const fitLabels: Record<ElectiveFit, (conflicts: number) => string> = {
+  fits: () => 'Cabe en el horario',
+  shift: () => 'Fuera del turno del semestre',
+  conflict: (conflicts) => `Choca con ${conflicts} ${conflicts === 1 ? 'clase' : 'clases'}`,
+  unscheduled: () => 'Sin horario asignado'
+};
 
 const errorText = (cause: unknown, fallback: string) =>
   cause instanceof Error ? cause.message : fallback;
@@ -59,7 +71,8 @@ export function StudyPlansPanel({ data, onAssign, onImport }: StudyPlansPanelPro
 
   const semesterRows = (plan: StudyPlan) => {
     const bySemester = new Map<number, string[]>();
-    for (const { subjectId, semester } of plan.subjects) {
+    for (const { subjectId, semester, blockId } of plan.subjects) {
+      if (blockId) continue;
       bySemester.set(semester, [
         ...(bySemester.get(semester) ?? []),
         subjectNames.get(subjectId) ?? 'Materia'
@@ -153,6 +166,43 @@ export function StudyPlansPanel({ data, onAssign, onImport }: StudyPlansPanelPro
                     </Text>
                   ))
                 : null}
+              {open
+                ? plan.blocks.map((block) => (
+                    <View key={block.id} style={styles.block}>
+                      <Text style={styles.semesterLabel}>
+                        Bloque {block.name} · {block.semester}.º semestre
+                      </Text>
+                      <Text style={styles.help}>
+                        Opciones ordenadas: primero las que mejor caben en el horario de los grupos
+                        del plan.
+                      </Text>
+                      {block.options.map((option) => (
+                        <View key={option.subjectId} style={styles.option}>
+                          <View style={styles.optionHeader}>
+                            <Text style={styles.optionName}>
+                              {subjectNames.get(option.subjectId) ?? 'Materia'}
+                            </Text>
+                            <Text
+                              style={[
+                                styles.fit,
+                                option.fit === 'fits' && styles.fitGood,
+                                option.fit === 'shift' && styles.fitShift,
+                                option.fit === 'conflict' && styles.fitBad
+                              ]}
+                            >
+                              {fitLabels[option.fit](option.conflicts)}
+                            </Text>
+                          </View>
+                          {option.slots.map((slot) => (
+                            <Text key={slot} style={styles.help}>
+                              {slot}
+                            </Text>
+                          ))}
+                        </View>
+                      ))}
+                    </View>
+                  ))
+                : null}
             </View>
           );
         })}
@@ -191,9 +241,11 @@ export function StudyPlansPanel({ data, onAssign, onImport }: StudyPlansPanelPro
         <View>
           <Text style={styles.cardTitle}>Importar plan de estudios</Text>
           <Text style={styles.help}>
-            Pega un CSV con las columnas {planCsvHeader}. Si la clave ya existe se reutiliza la
-            materia; si no, se crea en la carrera elegida. Si la carrera ya tiene un plan de ese
-            año, se reemplaza.
+            Pega un CSV con las columnas {planCsvHeader}. La columna bloque es opcional: las
+            materias con el mismo bloque son opciones de una electiva (por ejemplo, Taller deportivo
+            con vóley, fútbol y ajedrez) y deben ser del mismo semestre. Si la clave ya existe se
+            reutiliza la materia; si no, se crea en la carrera elegida. Si la carrera ya tiene un
+            plan de ese año, se reemplaza.
           </Text>
         </View>
         <View style={styles.formRow}>
@@ -235,7 +287,7 @@ export function StudyPlansPanel({ data, onAssign, onImport }: StudyPlansPanelPro
           accessibilityLabel="CSV del plan de estudios"
           multiline
           onChangeText={setCsv}
-          placeholder={`${planCsvHeader}\nISC-001,Fundamentos de programación,1\nISC-010,Seguridad informática,7`}
+          placeholder={`${planCsvHeader}\nISC-001,Fundamentos de programación,1,\nISC-E01,Voleibol,5,Taller deportivo\nISC-E02,Ajedrez,5,Taller deportivo`}
           placeholderTextColor={dashboardColors.textMuted}
           style={[styles.input, styles.csv]}
           value={csv}
@@ -261,6 +313,32 @@ export function StudyPlansPanel({ data, onAssign, onImport }: StudyPlansPanelPro
 }
 
 const styles = StyleSheet.create({
+  block: {
+    backgroundColor: dashboardColors.surface,
+    borderRadius: 8,
+    gap: 10,
+    padding: 12
+  },
+  fit: { fontSize: 12, fontWeight: '700' },
+  fitBad: { color: '#e2252a' },
+  fitGood: { color: '#1aa34a' },
+  fitShift: { color: dashboardColors.warning },
+  option: {
+    backgroundColor: dashboardColors.card,
+    borderColor: dashboardColors.border,
+    borderRadius: 8,
+    borderWidth: 1,
+    gap: 2,
+    padding: 10
+  },
+  optionHeader: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    justifyContent: 'space-between'
+  },
+  optionName: { color: dashboardColors.textPrimary, fontSize: 14, fontWeight: '600' },
   actions: { alignItems: 'center', flexDirection: 'row', flexWrap: 'wrap', gap: 16 },
   card: {
     backgroundColor: dashboardColors.card,

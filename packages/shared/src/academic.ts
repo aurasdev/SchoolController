@@ -70,19 +70,38 @@ export type AcademicGroup = {
   academicPeriodId: string;
   studyPlanId: string | null;
 };
+/** How well an elective option fits the groups that take its block, best first. */
+export type ElectiveFit = 'fits' | 'shift' | 'conflict' | 'unscheduled';
+export type ElectiveOption = {
+  subjectId: string;
+  fit: ElectiveFit;
+  /** Overlaps with the other classes of the groups that take the block. */
+  conflicts: number;
+  /** One line per scheduled class: day, time, teacher and room. */
+  slots: string[];
+};
+export type ElectiveBlock = {
+  id: string;
+  name: string;
+  semester: number;
+  /** Ranked options: the ones that fit the groups' schedule come first. */
+  options: ElectiveOption[];
+};
 export type StudyPlan = {
   id: string;
   departmentId: string;
   year: number;
   name: string;
   groups: number;
-  subjects: { subjectId: string; semester: number }[];
+  subjects: { subjectId: string; semester: number; blockId: string | null }[];
+  blocks: ElectiveBlock[];
 };
 export type StudyPlanImportInput = {
   departmentId: string;
   year: number;
   name: string;
-  subjects: { code: string; name: string; semester: number }[];
+  /** `block` groups the subjects that are options of the same elective block. */
+  subjects: { code: string; name: string; semester: number; block?: string }[];
 };
 export type AcademicPeriod = {
   id: string;

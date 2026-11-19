@@ -89,6 +89,10 @@ function setup() {
       deleteMany: vi.fn().mockResolvedValue({}),
       createMany: vi.fn().mockResolvedValue({})
     },
+    electiveBlock: {
+      deleteMany: vi.fn().mockResolvedValue({}),
+      create: vi.fn().mockResolvedValue({ id: 'block' })
+    },
     subjectTeacher: {
       findMany: vi.fn().mockResolvedValue([]),
       deleteMany: vi.fn().mockResolvedValue({}),
@@ -256,9 +260,34 @@ describe('academic scheduling invariants', () => {
       expect(tx.subject.create.mock.calls[0]![0].data.code).toBe('ISC-001');
       expect(tx.studyPlanSubject.deleteMany).toHaveBeenCalledOnce();
       expect(tx.studyPlanSubject.createMany.mock.calls[0]![0].data).toEqual([
-        { subjectId: 'new-subject', semester: 1, studyPlanId: 'plan' },
-        { subjectId: 'new-subject', semester: 3, studyPlanId: 'plan' }
+        { subjectId: 'new-subject', semester: 1, studyPlanId: 'plan', electiveBlockId: null },
+        { subjectId: 'new-subject', semester: 3, studyPlanId: 'plan', electiveBlockId: null }
       ]);
+    });
+
+    it('groups the options of an elective block under one block of the plan', async () => {
+      const { tx, service } = setup();
+      tx.subject.findUnique.mockResolvedValue(null);
+      await service.importStudyPlan({
+        departmentId: 'department',
+        year: 2024,
+        name: 'Plan 2024',
+        subjects: [
+          { code: 'ISC-001', name: 'Fundamentos', semester: 1 },
+          { code: 'DEP-001', name: 'Voleibol', semester: 5, block: 'Taller deportivo' },
+          { code: 'DEP-002', name: 'Ajedrez', semester: 5, block: 'taller deportivo' }
+        ]
+      });
+      expect(tx.electiveBlock.deleteMany).toHaveBeenCalledOnce();
+      expect(tx.electiveBlock.create).toHaveBeenCalledTimes(1);
+      expect(tx.electiveBlock.create).toHaveBeenCalledWith({
+        data: { studyPlanId: 'plan', name: 'Taller deportivo', semester: 5 }
+      });
+      expect(
+        tx.studyPlanSubject.createMany.mock.calls[0]![0].data.map(
+          (entry: { electiveBlockId: string | null }) => entry.electiveBlockId
+        )
+      ).toEqual([null, 'block', 'block']);
     });
 
     it('does not take over a subject that belongs to another career', async () => {
