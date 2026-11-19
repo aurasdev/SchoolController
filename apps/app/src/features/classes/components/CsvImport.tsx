@@ -4,6 +4,7 @@ import { Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 
 
 import { dashboardColors as colors } from '@/features/admin-dashboard/tokens';
 import { styles } from '@/features/classes/components/ClassEditor';
+import { CsvFilePicker } from '@/features/classes/components/CsvFilePicker';
 import type { ClassInput } from '@/features/classes/content';
 import { csvHeader, parseClassesCsv } from '@/features/classes/csv';
 
@@ -80,6 +81,13 @@ export function CsvImport({ data, onClose, onImport }: Props) {
             <Text selectable style={localStyles.example}>
               {csvHeader}
             </Text>
+            <CsvFilePicker
+              onError={setError}
+              onRead={(source) => {
+                setCsv(source);
+                setError('');
+              }}
+            />
             <TextInput
               accessibilityLabel="CSV content"
               autoFocus
