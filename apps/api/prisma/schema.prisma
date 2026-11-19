@@ -83,6 +83,7 @@ model Teacher {
   department       Department           @relation(fields: [departmentId], references: [id], onDelete: Restrict)
   user             User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
   assignments      ScheduleAssignment[]
+  eligibleSubjects SubjectTeacher[]
   createdAt        DateTime             @default(now()) @map("created_at")
   updatedAt        DateTime             @updatedAt @map("updated_at")
 
@@ -97,6 +98,8 @@ model Subject {
   description  String?              @db.Text
   departmentId String?              @map("department_id") @db.Uuid
   department   Department?          @relation(fields: [departmentId], references: [id], onDelete: Restrict)
+  planEntries  StudyPlanSubject[]
+  teachers     SubjectTeacher[]
   assignments  ScheduleAssignment[]
   createdAt    DateTime             @default(now()) @map("created_at")
   updatedAt    DateTime             @updatedAt @map("updated_at")
@@ -112,6 +115,8 @@ model Group {
   name             String               @db.VarChar(100)
   departmentId     String               @map("department_id") @db.Uuid
   semester         Int                  @default(1)
+  studyPlanId      String?              @map("study_plan_id") @db.Uuid
+  studyPlan        StudyPlan?           @relation(fields: [studyPlanId], references: [id], onDelete: SetNull)
   department       Department           @relation(fields: [departmentId], references: [id], onDelete: Restrict)
   academicPeriod   AcademicPeriod       @relation(fields: [academicPeriodId], references: [id], onDelete: Restrict)
   students         Student[]
@@ -123,6 +128,7 @@ model Group {
   @@unique([code, academicPeriodId])
   @@index([academicPeriodId])
   @@index([departmentId])
+  @@index([studyPlanId])
   @@map("academic_groups")
 }
 
@@ -203,12 +209,13 @@ model ScheduleAssignment {
 }
 
 model Department {
-  id       String    @id @default(uuid()) @db.Uuid
-  code     String    @unique @db.VarChar(30)
-  name     String    @unique @db.VarChar(100)
-  teachers Teacher[]
-  subjects Subject[]
-  groups   Group[]
+  id         String      @id @default(uuid()) @db.Uuid
+  code       String      @unique @db.VarChar(30)
+  name       String      @unique @db.VarChar(100)
+  teachers   Teacher[]
+  subjects   Subject[]
+  groups     Group[]
+  studyPlans StudyPlan[]
 
   @@map("departments")
 }
@@ -220,4 +227,60 @@ model AcademicActivity {
 
   @@index([createdAt])
   @@map("academic_activities")
+}
+
+// Single-row table (id is always 1): global scheduling rules edited from Configuración.
+model SchedulingSettings {
+  id                 Int      @id @default(1)
+  shiftRulesEnabled  Boolean  @default(false) @map("shift_rules_enabled")
+  morningSemesters   Int[]    @default([1, 2]) @map("morning_semesters")
+  afternoonSemesters Int[]    @default([3, 4, 5, 6, 7, 8, 9, 10]) @map("afternoon_semesters")
+  morningStart       String   @default("08:00") @map("morning_start") @db.VarChar(5)
+  afternoonStart     String   @default("14:30") @map("afternoon_start") @db.VarChar(5)
+  dayEnd             String   @default("22:00") @map("day_end") @db.VarChar(5)
+  updatedAt          DateTime @updatedAt @map("updated_at")
+
+  @@map("scheduling_settings")
+}
+
+// A career can have several study plans (e.g. 2020 and 2024); each groups' plan decides which
+// semester a subject belongs to, so the same subject can be 5th semester in one plan and 7th in another.
+model StudyPlan {
+  id           String             @id @default(uuid()) @db.Uuid
+  departmentId String             @map("department_id") @db.Uuid
+  year         Int
+  name         String             @db.VarChar(100)
+  department   Department         @relation(fields: [departmentId], references: [id], onDelete: Restrict)
+  subjects     StudyPlanSubject[]
+  groups       Group[]
+  createdAt    DateTime           @default(now()) @map("created_at")
+  updatedAt    DateTime           @updatedAt @map("updated_at")
+
+  @@unique([departmentId, year])
+  @@map("study_plans")
+}
+
+// Teachers allowed to teach a subject. No rows: any teacher of the career; one row: only that teacher.
+model SubjectTeacher {
+  subjectId String  @map("subject_id") @db.Uuid
+  teacherId String  @map("teacher_id") @db.Uuid
+  subject   Subject @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  teacher   Teacher @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+
+  @@id([subjectId, teacherId])
+  @@index([teacherId])
+  @@map("subject_teachers")
+}
+
+model StudyPlanSubject {
+  id          String    @id @default(uuid()) @db.Uuid
+  studyPlanId String    @map("study_plan_id") @db.Uuid
+  subjectId   String    @map("subject_id") @db.Uuid
+  semester    Int
+  studyPlan   StudyPlan @relation(fields: [studyPlanId], references: [id], onDelete: Cascade)
+  subject     Subject   @relation(fields: [subjectId], references: [id], onDelete: Restrict)
+
+  @@unique([studyPlanId, subjectId])
+  @@index([subjectId])
+  @@map("study_plan_subjects")
 }

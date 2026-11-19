@@ -73,7 +73,8 @@ export function ClassEditor({ data, item, onClose, onSave }: Props) {
         ...current,
         subjectId,
         teacherId:
-          !nextSubject?.departmentId || teacher?.departmentId === nextSubject.departmentId
+          (!nextSubject?.departmentId || teacher?.departmentId === nextSubject.departmentId) &&
+          (!nextSubject?.teacherIds.length || nextSubject.teacherIds.includes(current.teacherId))
             ? current.teacherId
             : '',
         groupId:
@@ -181,7 +182,8 @@ export function ClassEditor({ data, item, onClose, onSave }: Props) {
                   .filter(
                     (value) =>
                       (value.status === 'Activo' || value.id === item?.teacherId) &&
-                      (!subject?.departmentId || value.departmentId === subject.departmentId)
+                      (!subject?.departmentId || value.departmentId === subject.departmentId) &&
+                      (!subject?.teacherIds.length || subject.teacherIds.includes(value.id))
                   )
                   .map((value) => ({
                     label: `${value.employeeId} · ${value.name}`,

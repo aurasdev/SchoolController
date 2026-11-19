@@ -12,7 +12,7 @@ const days: AcademicDay[] = [
   'SUNDAY'
 ];
 
-export function parseClassesCsv(source: string, data: AcademicData): ClassInput[] {
+export function parseCsvRows(source: string): string[][] {
   const rows: string[][] = [];
   let row: string[] = [];
   let field = '';
@@ -39,6 +39,11 @@ export function parseClassesCsv(source: string, data: AcademicData): ClassInput[
   if (quoted) throw new Error('A quoted CSV value is missing its closing quote.');
   row.push(field.trim());
   if (row.some(Boolean)) rows.push(row);
+  return rows;
+}
+
+export function parseClassesCsv(source: string, data: AcademicData): ClassInput[] {
+  const rows = parseCsvRows(source);
   if (
     rows
       .shift()

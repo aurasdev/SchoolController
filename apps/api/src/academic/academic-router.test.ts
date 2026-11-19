@@ -34,7 +34,11 @@ function setup(role: UserRole = 'ADMIN') {
     saveStudent: vi.fn().mockResolvedValue({ id }),
     saveClassroom: vi.fn().mockResolvedValue({ id }),
     saveClass: vi.fn().mockResolvedValue({ id }),
-    importClasses: vi.fn().mockResolvedValue({ ids: [id] })
+    importClasses: vi.fn().mockResolvedValue({ ids: [id] }),
+    saveSettings: vi.fn().mockResolvedValue({ id: 'settings' }),
+    importStudyPlan: vi.fn().mockResolvedValue({ id }),
+    assignGroupPlan: vi.fn().mockResolvedValue({ id }),
+    saveSubjectTeachers: vi.fn().mockResolvedValue({ id })
   };
   const auth: AuthService = {
     login: vi.fn(),
@@ -129,6 +133,134 @@ describe('academic routes', () => {
       .send({ items: [classInput, { ...classInput, dayOfWeek: 'LUNES' }] });
     expect(response.status).toBe(400);
     expect(service.importClasses).not.toHaveBeenCalled();
+  });
+
+  describe('eligible teachers', () => {
+    const put = (app: ReturnType<typeof setup>['app'], body: object) =>
+      request(app)
+        .put(`/academic/subjects/${id}/teachers`)
+        .set('Authorization', 'Bearer token')
+        .send(body);
+
+    it('saves a list, or an empty list, for an administrator', async () => {
+      const { app, service } = setup();
+      expect((await put(app, { teacherIds: [id] })).status).toBe(200);
+      expect((await put(app, { teacherIds: [] })).status).toBe(200);
+      expect(service.saveSubjectTeachers).toHaveBeenNthCalledWith(1, id, [id]);
+      expect(service.saveSubjectTeachers).toHaveBeenNthCalledWith(2, id, []);
+    });
+
+    it.each([{ teacherIds: ['x'] }, { teacherIds: [id, id] }, { teacherIds: [], extra: 1 }, {}])(
+      'rejects an invalid list before writing',
+      async (body) => {
+        const { app, service } = setup();
+        expect((await put(app, body)).status).toBe(400);
+        expect(service.saveSubjectTeachers).not.toHaveBeenCalled();
+      }
+    );
+
+    it('blocks non-administrators', async () => {
+      const { app, service } = setup('TEACHER');
+      expect((await put(app, { teacherIds: [] })).status).toBe(403);
+      expect(service.saveSubjectTeachers).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('study plans', () => {
+    const plan = {
+      departmentId: id,
+      year: 2024,
+      name: 'Plan 2024',
+      subjects: [{ code: 'ISC-001', name: 'Fundamentos', semester: 1 }]
+    };
+    const importPlan = (app: ReturnType<typeof setup>['app'], body: object) =>
+      request(app)
+        .post('/academic/study-plans/import')
+        .set('Authorization', 'Bearer token')
+        .send(body);
+
+    it('imports a valid plan', async () => {
+      const { app, service } = setup();
+      expect((await importPlan(app, plan)).status).toBe(201);
+      expect(service.importStudyPlan).toHaveBeenCalledWith(plan);
+    });
+
+    it.each([
+      { ...plan, subjects: [] },
+      { ...plan, year: 1800 },
+      { ...plan, subjects: [{ code: 'ISC-001', name: 'Fundamentos', semester: 13 }] },
+      {
+        ...plan,
+        subjects: [
+          { code: 'ISC-001', name: 'Fundamentos', semester: 1 },
+          { code: 'isc-001', name: 'Duplicada', semester: 2 }
+        ]
+      }
+    ])('rejects an invalid plan before writing', async (body) => {
+      const { app, service } = setup();
+      expect((await importPlan(app, body)).status).toBe(400);
+      expect(service.importStudyPlan).not.toHaveBeenCalled();
+    });
+
+    it('assigns or clears the plan of a group and blocks non-administrators', async () => {
+      const { app, service } = setup();
+      const patch = (body: object) =>
+        request(app)
+          .patch(`/academic/groups/${id}/plan`)
+          .set('Authorization', 'Bearer token')
+          .send(body);
+      expect((await patch({ studyPlanId: id })).status).toBe(200);
+      expect((await patch({ studyPlanId: null })).status).toBe(200);
+      expect((await patch({ studyPlanId: 'x' })).status).toBe(400);
+      expect(service.assignGroupPlan).toHaveBeenNthCalledWith(1, id, id);
+      expect(service.assignGroupPlan).toHaveBeenNthCalledWith(2, id, null);
+      const forbidden = setup('TEACHER');
+      const response = await request(forbidden.app)
+        .patch(`/academic/groups/${id}/plan`)
+        .set('Authorization', 'Bearer token')
+        .send({ studyPlanId: null });
+      expect(response.status).toBe(403);
+      expect(forbidden.service.assignGroupPlan).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('shift settings', () => {
+    const settings = {
+      enabled: true,
+      morningSemesters: [1, 2],
+      afternoonSemesters: [3, 4, 5],
+      morningStart: '08:00',
+      afternoonStart: '14:30',
+      dayEnd: '22:00'
+    };
+    const put = (app: ReturnType<typeof setup>['app'], body: object) =>
+      request(app).put('/academic/settings').set('Authorization', 'Bearer token').send(body);
+
+    it('saves valid settings for an administrator', async () => {
+      const { app, service } = setup();
+      expect((await put(app, settings)).status).toBe(200);
+      expect(service.saveSettings).toHaveBeenCalledWith(settings);
+    });
+
+    it('blocks non-administrators', async () => {
+      const { app, service } = setup('COORDINATOR');
+      expect((await put(app, settings)).status).toBe(403);
+      expect(service.saveSettings).not.toHaveBeenCalled();
+    });
+
+    it.each([
+      { ...settings, afternoonSemesters: [2, 3] },
+      { ...settings, afternoonStart: '07:00' },
+      { ...settings, dayEnd: '23:00' },
+      { ...settings, morningStart: '5:00' },
+      { ...settings, morningSemesters: [0] },
+      { ...settings, extra: true }
+    ])('rejects invalid settings before writing', async (body) => {
+      const { app, service } = setup();
+      const response = await put(app, body);
+      expect(response.status).toBe(400);
+      expect(service.saveSettings).not.toHaveBeenCalled();
+    });
   });
 
   it('returns actionable scheduling conflicts without changing the response contract', async () => {

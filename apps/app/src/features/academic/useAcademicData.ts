@@ -2,7 +2,9 @@ import type {
   AcademicData,
   ClassInput,
   ClassroomInput,
+  ShiftSettings,
   StudentInput,
+  StudyPlanImportInput,
   TeacherInput
 } from '@school-controller/shared';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -12,6 +14,7 @@ export function useAcademicData() {
   const [data, setData] = useState<AcademicData>();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [notice, setNotice] = useState('');
   const requestVersion = useRef(0);
   const refresh = useCallback(async (signal?: AbortSignal) => {
     const version = ++requestVersion.current;
@@ -41,7 +44,17 @@ export function useAcademicData() {
   }, [refresh]);
   const commit = useCallback(
     async (path: string, input: unknown, method: string) => {
-      const result = await academicRequest<{ id: string }>(path, input, method);
+      const result = await academicRequest<{ id?: string; warnings?: string[] }>(
+        path,
+        input,
+        method
+      );
+      const warnings = result.warnings ?? [];
+      setNotice(
+        warnings.length > 3
+          ? `${warnings.slice(0, 3).join(' ')} Y ${warnings.length - 3} avisos más.`
+          : warnings.join(' ')
+      );
       try {
         await refresh();
       } catch {
@@ -49,7 +62,7 @@ export function useAcademicData() {
           'Los cambios se guardaron. Pulsa Actualizar para cargar la información más reciente.'
         );
       }
-      return result.id;
+      return result.id ?? '';
     },
     [refresh]
   );
@@ -102,10 +115,41 @@ export function useAcademicData() {
     },
     [data, updateClassroom]
   );
+  const saveSettings = useCallback(
+    async (input: ShiftSettings) => {
+      await commit('/settings', input, 'PUT');
+    },
+    [commit]
+  );
+  const importStudyPlan = useCallback(
+    async (input: StudyPlanImportInput) => {
+      await commit('/study-plans/import', input, 'POST');
+    },
+    [commit]
+  );
+  const assignGroupPlan = useCallback(
+    async (groupId: string, studyPlanId: string | null) => {
+      await commit(`/groups/${groupId}/plan`, { studyPlanId }, 'PATCH');
+    },
+    [commit]
+  );
+  const saveSubjectTeachers = useCallback(
+    async (subjectId: string, teacherIds: string[]) => {
+      await commit(`/subjects/${subjectId}/teachers`, { teacherIds }, 'PUT');
+    },
+    [commit]
+  );
+  const dismissNotice = useCallback(() => setNotice(''), []);
   return {
     data,
     loading,
     error,
+    notice,
+    dismissNotice,
+    saveSettings,
+    importStudyPlan,
+    assignGroupPlan,
+    saveSubjectTeachers,
     refresh,
     saveTeacher,
     saveStudent,

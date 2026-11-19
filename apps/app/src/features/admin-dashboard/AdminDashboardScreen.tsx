@@ -20,6 +20,7 @@ import type { DashboardSection } from '@/features/admin-dashboard/types';
 import { ClassesView } from '@/features/classes/ClassesView';
 import { ClassroomsView } from '@/features/classrooms';
 import type { AuthenticatedUser } from '@/features/login/types';
+import { SettingsView } from '@/features/settings/SettingsView';
 import { StudentsView } from '@/features/students/StudentsView';
 import { TeachersView } from '@/features/teachers/TeachersView';
 import { useAcademicData } from '@/features/academic/useAcademicData';
@@ -78,6 +79,20 @@ export function AdminDashboardScreen({ onSignOut, user }: AdminDashboardScreenPr
                 </Pressable>
               </View>
             ) : null}
+            {academic.notice ? (
+              <View style={styles.errorBox}>
+                <Text accessibilityLiveRegion="polite" style={styles.errorText}>
+                  {academic.notice}
+                </Text>
+                <Pressable
+                  accessibilityRole="button"
+                  onPress={academic.dismissNotice}
+                  style={styles.retry}
+                >
+                  <Text style={styles.retryText}>Entendido</Text>
+                </Pressable>
+              </View>
+            ) : null}
             {!data && academic.loading ? (
               <View style={styles.loading}>
                 <ActivityIndicator color={dashboardColors.primary} />
@@ -126,23 +141,13 @@ export function AdminDashboardScreen({ onSignOut, user }: AdminDashboardScreenPr
               />
             ) : null}
             {data && activeSection === 'settings' ? (
-              <View style={styles.settings}>
-                <Text accessibilityRole="header" style={styles.settingsTitle}>
-                  Configuración académica
-                </Text>
-                <Text style={styles.loadingText}>Periodos registrados</Text>
-                {data.periods.map((period) => (
-                  <View key={period.id} style={styles.period}>
-                    <Text style={styles.retryText}>
-                      {period.name}
-                      {period.isActive ? ' · Activo' : ''}
-                    </Text>
-                    <Text style={styles.loadingText}>
-                      {period.startsOn.slice(0, 10)} — {period.endsOn.slice(0, 10)}
-                    </Text>
-                  </View>
-                ))}
-              </View>
+              <SettingsView
+                data={data}
+                onAssignPlan={academic.assignGroupPlan}
+                onImportPlan={academic.importStudyPlan}
+                onSave={academic.saveSettings}
+                onSaveSubjectTeachers={academic.saveSubjectTeachers}
+              />
             ) : null}
           </ScrollView>
         </View>
@@ -165,16 +170,6 @@ const styles = StyleSheet.create({
   retryText: { color: dashboardColors.primary, fontSize: 14, fontWeight: '600' },
   loading: { alignItems: 'center', padding: 48, gap: 16 },
   loadingText: { color: dashboardColors.textSecondary, fontSize: 14 },
-  settings: { gap: 16 },
-  settingsTitle: { color: dashboardColors.textPrimary, fontSize: 24, fontWeight: '700' },
-  period: {
-    backgroundColor: dashboardColors.card,
-    padding: 20,
-    borderWidth: 1,
-    borderColor: dashboardColors.border,
-    borderRadius: 8,
-    gap: 10
-  },
   content: {
     alignSelf: 'center',
     maxWidth: 1232,
